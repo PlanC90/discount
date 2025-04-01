@@ -10,8 +10,28 @@ interface Coupon {
   discount: number;
   description?: string;
   image_url?: string;
+  website_link?: string;
+  category?: string;
+  country?: string;
   approved?: boolean;
 }
+
+const categories = [
+  'Food', 'Electronics', 'Clothing', 'Travel', 'Home & Garden', 'Beauty', 'Sports & Outdoors',
+  'Books', 'Movies & Music', 'Toys & Games', 'Health & Personal Care', 'Automotive', 'Baby',
+  'Pet Supplies', 'Office Supplies', 'School Supplies', 'Arts & Crafts', 'Industrial & Scientific',
+  'Other'
+];
+
+const countries = [
+  'USA', 'Canada', 'UK', 'Germany', 'France', 'Turkey', 'Australia', 'Japan', 'China', 'India',
+  'Brazil', 'Mexico', 'Italy', 'Spain', 'Netherlands', 'Switzerland', 'Sweden', 'Norway',
+  'Denmark', 'Finland', 'Russia', 'South Africa', 'Nigeria', 'Egypt', 'Saudi Arabia',
+  'United Arab Emirates', 'Singapore', 'South Korea', 'Argentina', 'Colombia', 'Peru', 'Chile',
+  'Austria', 'Belgium', 'Ireland', 'Portugal', 'Greece', 'Poland', 'Hungary', 'Czech Republic',
+  'Romania', 'Ukraine', 'Vietnam', 'Thailand', 'Indonesia', 'Malaysia', 'Philippines',
+  'New Zealand', 'Other'
+];
 
 function App() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -22,7 +42,10 @@ function App() {
     code: '',
     discount: 0,
     description: '',
-    image_url: ''
+    image_url: '',
+    website_link: '',
+    category: '',
+    country: ''
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -30,7 +53,7 @@ function App() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [searchTerm, setSearchTerm] = useState('');
-  const [discountSearchTerm, setDiscountSearchTerm] = useState('');
+  const [bannerLoaded, setBannerLoaded] = useState(false);
 
   useEffect(() => {
     fetchCoupons();
@@ -70,7 +93,10 @@ function App() {
           code: formData.code,
           discount: formData.discount,
           description: formData.description,
-          image_url: formData.image_url
+          image_url: formData.image_url,
+          website_link: formData.website_link,
+          category: formData.category,
+          country: formData.country
         }]);
 
       if (error) {
@@ -80,7 +106,7 @@ function App() {
       }
       
       toast.success('Coupon added successfully');
-      setFormData({ title: '', code: '', discount: 0, description: '', image_url: '' });
+      setFormData({ title: '', code: '', discount: 0, description: '', image_url: '', website_link: '', category: '', country: '' });
       fetchCoupons();
     } catch (error) {
       console.error("Error during insert:", error);
@@ -88,7 +114,8 @@ function App() {
     }
   };
 
-  const handleEdit = async (id: string) => {
+  const handleEdit = async (e: React.FormEvent, id: string) => {
+    e.preventDefault();
     try {
       const { error } = await supabase
         .from('coupons')
@@ -97,7 +124,10 @@ function App() {
           code: formData.code,
           discount: formData.discount,
           description: formData.description,
-          image_url: formData.image_url
+          image_url: formData.image_url,
+          website_link: formData.website_link,
+          category: formData.category,
+          country: formData.country
         })
         .eq('id', id);
 
@@ -144,8 +174,12 @@ function App() {
       code: coupon.code,
       discount: coupon.discount,
       description: coupon.description || '',
-      image_url: coupon.image_url || ''
+      image_url: coupon.image_url || '',
+      website_link: coupon.website_link || '',
+      category: coupon.category || '',
+      country: coupon.country || ''
     });
+    setActiveTab('profile');
   };
 
   const toggleApprove = async (id: string, currentApprovalStatus: boolean) => {
@@ -181,21 +215,22 @@ function App() {
   };
 
   const CouponCard = ({ coupon }: { coupon: Coupon }) => (
-    <div className="bg-gradient-to-r from-purple-400 to-blue-500 rounded-xl shadow-md overflow-hidden relative hover:shadow-lg transition-shadow duration-300">
+    
+    <div className="coupon-card hover:scale-105 transition-transform duration-200">
       <div className="absolute top-2 right-2 bg-white bg-opacity-30 backdrop-filter backdrop-blur-lg rounded-md text-sm px-2 py-1">
         {coupon.approved ? 'Approved' : 'Pending'}
       </div>
-      <div className="p-6">
-        <h3 className="text-2xl font-bold text-white mb-2">{coupon.title}</h3>
-        <p className="text-gray-100 mb-4">{coupon.description}</p>
-        <div className="flex items-center justify-between">
+      <div className="coupon-card-content">
+        <h3 className="coupon-title">{coupon.title}</h3>
+        <p className="coupon-description">{coupon.description}</p>
+        <div className="coupon-code-container">
           <div>
-            <span className="text-white font-semibold">Code:</span>
-            <code className="text-yellow-200">{coupon.code}</code>
+            <span className="coupon-code-label">Code:</span>
+            <code className="coupon-code">{coupon.code}</code>
           </div>
-          <div className="text-right">
-            <span className="text-white font-semibold">Discount:</span>
-            <span className="text-2xl text-green-200 hover:text-green-300 transition-colors duration-200">{coupon.discount}%</span>
+          <div className="coupon-discount-container">
+            <span className="coupon-discount-label">Discount:</span>
+            <span className="coupon-discount">{coupon.discount}%</span>
           </div>
         </div>
       </div>
@@ -203,7 +238,7 @@ function App() {
         <img
           src={coupon.image_url}
           alt="Coupon"
-          className="w-full h-48 object-cover"
+          className="coupon-image"
         />
       )}
     </div>
@@ -213,79 +248,81 @@ function App() {
     coupon.approved &&
     coupon.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
     coupon.code.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (coupon.description?.toLowerCase().includes(searchTerm.toLowerCase()) || true) &&
-    (discountSearchTerm === '' || coupon.discount.toString().includes(discountSearchTerm))
+    (coupon.description?.toLowerCase().includes(searchTerm.toLowerCase()) || true)
   );
 
   const navigateToAdminLogin = () => {
     setActiveTab('adminLogin');
   };
 
+  const handleBannerLoad = () => {
+    setBannerLoaded(true);
+  };
+
   return (
     
     <div className="min-h-screen bg-dark-primary py-8 text-dark-text">
       <div className="max-w-4xl mx-auto px-4">
-        <nav className="flex justify-between items-center mb-8">
-          <div className="flex space-x-4">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <img
+              src="https://cdn.glitch.global/c0240ef5-b1d3-409c-a790-588d18d5cf32/memexlogo-Photoroom.png"
+              alt="MemeX Logo"
+              className="h-12 w-auto mr-4"
+            />
+            <span className="text-white font-bold text-lg">MemeX Coupon</span>
+          </div>
+          <div className="flex items-center">
             <button
               onClick={() => setActiveTab('home')}
-              className={`flex items-center hover:text-blue-500 ${activeTab === 'home' ? 'text-blue-500' : 'text-gray-700'}`}
+              className={`nav-button ${activeTab === 'home' ? 'active' : ''} mr-2`}
             >
               <Home className="w-5 h-5 mr-1" />
               Home
             </button>
             <button
               onClick={() => setActiveTab('profile')}
-              className={`flex items-center hover:text-blue-500 ${activeTab === 'profile' ? 'text-blue-500' : 'text-gray-700'}`}
+              className={`nav-button ${activeTab === 'profile' ? 'active' : ''} mr-2`}
             >
               <User className="w-5 h-5 mr-1" />
               Profile
             </button>
-            {isAdmin && (
+            {isAdmin ? (
               <button
-                onClick={() => setActiveTab('admin')}
-                className={`flex items-center hover:text-blue-500 ${activeTab === 'admin' ? 'text-blue-500' : 'text-gray-700'}`}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                onClick={() => {
+                  setIsAdmin(false);
+                  setAdminPassword('');
+                  setActiveTab('home');
+                }}
               >
-                <Settings className="w-5 h-5 mr-1" />
-                Admin
+                Logout
+              </button>
+            ) : (
+              <button
+                className="admin-login-button"
+                onClick={navigateToAdminLogin}
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Admin Login
               </button>
             )}
           </div>
-          {isAdmin ? (
-            <button
-              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-              onClick={() => {
-                setIsAdmin(false);
-                setAdminPassword('');
-                setActiveTab('home');
-              }}
-            >
-              Logout
-            </button>
-          ) : (
-            <button
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center"
-              onClick={navigateToAdminLogin}
-            >
-              <Lock className="w-4 h-4 mr-2" />
-              Admin Login
-            </button>
-          )}
-        </nav>
+        </div>
 
         {activeTab === 'adminLogin' && (
-          <div className="bg-dark-secondary rounded-lg shadow-sm p-6 mb-8">
-            <h2 className="text-xl font-semibold text-dark-text mb-4">Admin Login</h2>
+          <div className="form-container">
+            <h2 className="form-title">Admin Login</h2>
             <input
               type="password"
               placeholder="Password"
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
-              className="px-4 py-2 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white w-full mb-4"
+              className="form-input"
             />
             <button
               onClick={handleAdminLogin}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              className="form-submit-button"
             >
               Login
             </button>
@@ -293,38 +330,38 @@ function App() {
         )}
 
         {activeTab === 'admin' && isAdmin && (
-          <div className="bg-dark-secondary rounded-lg shadow-sm p-6 mb-8">
-            <h2 className="text-xl font-semibold text-dark-text mb-4">Admin Panel</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gray-800 rounded-md p-4">
-                <h3 className="text-lg font-medium text-gray-300">Total Coupons</h3>
-                <p className="text-2xl font-bold text-white">{coupons.length}</p>
+          <div className="admin-panel">
+            <h2 className="admin-panel-title">Admin Panel</h2>
+            <div className="admin-summary-grid">
+              <div className="admin-summary-card">
+                <h3 className="admin-summary-title">Total Coupons</h3>
+                <p className="admin-summary-value">{coupons.length}</p>
               </div>
-              <div className="bg-gray-800 rounded-md p-4">
-                <h3 className="text-lg font-medium text-gray-300">Approved Coupons</h3>
-                <p className="text-2xl font-bold text-white">{coupons.filter(c => c.approved).length}</p>
+              <div className="admin-summary-card">
+                <h3 className="admin-summary-title">Approved Coupons</h3>
+                <p className="admin-summary-value">{coupons.filter(c => c.approved).length}</p>
               </div>
-              <div className="bg-gray-800 rounded-md p-4">
-                <h3 className="text-lg font-medium text-gray-300">Pending Coupons</h3>
-                <p className="text-2xl font-bold text-white">{coupons.filter(c => !c.approved).length}</p>
+              <div className="admin-summary-card">
+                <h3 className="admin-summary-title">Pending Coupons</h3>
+                <p className="admin-summary-value">{coupons.filter(c => !c.approved).length}</p>
               </div>
             </div>
           </div>
         )}
         
         {activeTab === 'profile' && (
-          <div className="bg-dark-secondary rounded-lg shadow-sm p-6 mb-8">
-            <h2 className="text-xl font-semibold text-dark-text mb-4">
+          <div className="form-container">
+            <h2 className="form-title">
               {editingId ? 'Edit Coupon' : 'Add New Coupon'}
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={editingId ? (e) => handleEdit(e, editingId) : handleSubmit} className="space-y-4">
+              <div className="form-grid">
                 <input
                   type="text"
                   placeholder="Title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="px-4 py-2 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white"
+                  className="form-input"
                   required
                 />
                 <input
@@ -332,17 +369,17 @@ function App() {
                   placeholder="Code"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className="px-4 py-2 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white"
+                  className="form-input"
                   required
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="form-grid">
                 <input
                   type="number"
                   placeholder="Discount"
                   value={formData.discount}
                   onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) })}
-                  className="px-4 py-2 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white"
+                  className="form-input"
                   required
                 />
                 <input
@@ -350,26 +387,52 @@ function App() {
                   placeholder="Image URL"
                   value={formData.image_url}
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  className="px-4 py-2 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white"
+                  className="form-input"
                 />
               </div>
-              <div className="grid grid-cols-1">
+              <div className="grid grid-cols-1 space-y-4">
+                <input
+                  type="url"
+                  placeholder="Website Link"
+                  value={formData.website_link}
+                  onChange={(e) => setFormData({ ...formData, website_link: e.target.value })}
+                  className="form-input"
+                />
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="form-input"
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+                <select
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  className="form-input"
+                >
+                  <option value="">Select Country</option>
+                  {countries.map((country) => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
                 <textarea
                   placeholder="Description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="px-4 py-2 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white"
+                  className="form-textarea"
                 />
                 {imagePreview && (
-                  <img src={imagePreview} alt="Image Preview" className="mt-2 max-h-40" />
+                  <img src={imagePreview} alt="Image Preview" className="form-image-preview" />
                 )}
               </div>
               {editingId ? (
                 <div className="flex space-x-2">
                   <button
-                    type="button"
-                    onClick={() => handleEdit(editingId)}
-                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center"
+                    type="submit"
+                    className="form-submit-button"
                   >
                     <Check className="w-4 h-4 mr-2" />
                     Save
@@ -378,10 +441,11 @@ function App() {
                     type="button"
                     onClick={() => {
                       setEditingId(null);
-                      setFormData({ title: '', code: '', discount: 0, description: '', image_url: '' });
+                      setFormData({ title: '', code: '', discount: 0, description: '', image_url: '', website_link: '', category: '', country: '' });
                       setImagePreview(null);
+                      setActiveTab('admin');
                     }}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 flex items-center"
+                    className="form-cancel-button"
                   >
                     <X className="w-4 h-4 mr-2" />
                     Cancel
@@ -390,7 +454,7 @@ function App() {
               ) : (
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center"
+                  className="form-submit-button"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add New Coupon
@@ -402,24 +466,19 @@ function App() {
 
         {activeTab === 'home' && (
           <>
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder="Search coupons..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-4 py-2 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white w-full"
-              />
-            </div>
-            <div className="mb-4">
-              <input
-                type="number"
-                placeholder="Search by discount..."
-                value={discountSearchTerm}
-                onChange={(e) => setDiscountSearchTerm(e.target.value)}
-                className="px-4 py-2 border border-gray-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-800 text-white w-full"
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="Search coupons..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input mb-4"
+            />
+            <img
+              src="https://cdn.glitch.global/c0240ef5-b1d3-409c-a790-588d18d5cf32/memex-banner2.png"
+              alt="Discount Banner"
+              className={`coupon-banner mb-4 ${bannerLoaded ? 'loaded' : 'loading'}`}
+              onLoad={handleBannerLoad}
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {loading ? (
                 <div className="flex items-center justify-center p-8">
@@ -437,46 +496,50 @@ function App() {
         )}
 
         {activeTab === 'admin' && isAdmin && (
-          <div className="bg-dark-secondary rounded-lg shadow-sm overflow-hidden">
+          <div className="admin-panel">
             <div className="overflow-x-auto">
               {loading ? (
                 <div className="flex items-center justify-center p-8">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
                 </div>
               ) : (
-                <table className="min-w-full divide-y divide-gray-700">
-                  <thead className="bg-gray-800">
+                <table className="admin-table">
+                  <thead className="admin-table-header">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Title</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Code</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Discount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Image</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Approval</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                      <th className="admin-table-header-cell">Title</th>
+                      <th className="admin-table-header-cell">Code</th>
+                      <th className="admin-table-header-cell">Discount</th>
+                      <th className="admin-table-header-cell">Description</th>
+                      <th className="admin-table-header-cell">Image</th>
+                      <th className="admin-table-header-cell">Approval</th>
+                      <th className="admin-table-header-cell text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-dark-secondary divide-y divide-gray-700">
+                  <tbody className="admin-table-body">
                     {coupons.map((coupon) => (
-                      <tr key={coupon.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-white">{coupon.title}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-white">{coupon.code}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-white">{coupon.discount}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-white">{coupon.description}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                      <tr key={coupon.id} className="admin-table-row">
+                        <td className="admin-table-cell">{coupon.title}</td>
+                        <td className="admin-table-cell">{coupon.code}</td>
+                        <td className="admin-table-cell">{coupon.discount}</td>
+                        <td className="admin-table-cell">
+                          {coupon.description && coupon.description.length > 20
+                            ? `${coupon.description.substring(0, 20)}...`
+                            : coupon.description}
+                        </td>
+                        <td className="admin-table-cell">
                           {coupon.image_url && (
-                            <img src={coupon.image_url} alt="Coupon" className="h-10 w-10 rounded-full" />
+                            <img src={coupon.image_url} alt="Coupon" className="admin-table-image" />
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="admin-table-cell">
                           <button
                             onClick={() => toggleApprove(coupon.id, !!coupon.approved)}
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${coupon.approved ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+                            className={`admin-table-approve-button ${coupon.approved ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
                           >
                             {coupon.approved ? 'Approved' : 'Approve'}
                           </button>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <td className="admin-table-cell admin-table-actions">
                           <button
                             onClick={() => startEditing(coupon)}
                             className="text-blue-600 hover:text-blue-900 mr-3"
@@ -484,7 +547,7 @@ function App() {
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(coupon.id)}
+                            onClick={()={() => handleDelete(coupon.id)}
                             className="text-red-600 hover:text-red-900"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -499,6 +562,15 @@ function App() {
           </div>
         )}
       </div>
+      <footer className="bg-dark-secondary text-white py-6 hover:bg-dark-tertiary transition duration-300">
+        <div className="max-w-4xl mx-auto px-4 flex justify-between items-center">
+          <p>&copy; {new Date().getFullYear()} Coupon App. All rights reserved.</p>
+          <div className="flex space-x-4">
+            <a href="#" className="hover:text-brand-yellow">Terms of Service</a>
+            <a href="#" className="hover:text-brand-yellow">Privacy Policy</a>
+          </div>
+        </div>
+      </footer>
       <Toaster position="top-right" />
     </div>
   

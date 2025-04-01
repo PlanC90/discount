@@ -1,7 +1,184 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  @apply bg-dark-primary text-dark-text;
+  font-family: 'Roboto', sans-serif;
+  background-color: #121212; /* Dark blue background */
+}
+
+.nav-button {
+  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md hover:bg-brand-blue transition duration-300 flex items-center;
+}
+
+.nav-button.active {
+  @apply bg-brand-yellow text-dark-primary font-bold;
+}
+
+.admin-login-button {
+  @apply px-4 py-2 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 flex items-center;
+}
+
+.form-container {
+  @apply bg-dark-secondary rounded-lg shadow-md p-8 mb-8;
+}
+
+.form-title {
+  @apply text-2xl font-semibold text-white mb-6;
+}
+
+.form-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+.form-input,
+.form-textarea {
+  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full;
+}
+
+.form-textarea {
+  @apply resize-none;
+}
+
+.form-image-preview {
+  @apply mt-4 max-h-40 rounded-md;
+}
+
+.form-submit-button {
+  @apply px-6 py-3 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 flex items-center;
+}
+
+.form-cancel-button {
+  @apply px-6 py-3 bg-dark-tertiary text-white rounded-md hover:bg-gray-600 transition duration-300 flex items-center;
+}
+
+.admin-panel {
+  @apply bg-dark-secondary rounded-lg shadow-md p-6 mb-8;
+}
+
+.admin-panel-title {
+  @apply text-xl font-semibold text-white mb-4;
+}
+
+.admin-summary-grid {
+  @apply grid grid-cols-1 md:grid-cols-3 gap-4;
+}
+
+.admin-summary-card {
+  @apply bg-dark-tertiary rounded-md p-4;
+}
+
+.admin-summary-title {
+  @apply text-lg font-medium text-gray-300;
+}
+
+.admin-summary-value {
+  @apply text-2xl font-bold text-white;
+}
+
+.admin-table {
+  @apply min-w-full divide-y divide-dark-tertiary;
+}
+
+.admin-table-header {
+  @apply bg-dark-tertiary;
+}
+
+.admin-table-header-cell {
+  @apply px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider;
+}
+
+.admin-table-body {
+  @apply bg-dark-primary divide-y divide-dark-tertiary;
+}
+
+.admin-table-row {
+  @apply hover:bg-dark-tertiary transition duration-200;
+}
+
+.admin-table-cell {
+  @apply px-6 py-4 whitespace-nowrap text-sm text-white;
+}
+
+.admin-table-image {
+  @apply h-10 w-10 rounded-full;
+}
+
+.admin-table-approve-button {
+  @apply px-3 py-1 rounded-full text-xs font-semibold;
+}
+
+.admin-table-actions {
+  @apply text-right;
+}
+
+.coupon-card {
+  @apply bg-dark-secondary rounded-lg shadow-md overflow-hidden relative;
+  margin-bottom: 1rem; /* Add space between coupon cards */
+}
+
+.coupon-card-content {
+  @apply p-4;
+}
+
+.coupon-title {
+  @apply text-xl font-semibold text-white mb-2;
+}
+
+.coupon-description {
+  @apply text-gray-300 mb-4;
+}
+
+.coupon-code-container {
+  @apply flex justify-between items-center;
+}
+
+.coupon-code-label {
+  @apply text-sm text-gray-400;
+}
+
+.coupon-code {
+  @apply text-lg font-bold text-brand-yellow;
+}
+
+.coupon-discount-container {
+  @apply flex items-center;
+}
+
+.coupon-discount-label {
+  @apply text-sm text-gray-400 mr-2;
+}
+
+.coupon-discount {
+  @apply text-lg font-bold text-green-500;
+}
+
+.coupon-image {
+  @apply w-full h-48 object-cover;
+}
+
+.search-input {
+  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full;
+}
+
+.coupon-banner {
+  @apply w-full h-auto mb-6; /* Add space below the banner */
+  object-fit: contain;
+  max-height: none; /* Remove the maximum height */
+  width: 100%; /* Make the banner take the full width */
+}
+
+.coupon-banner.loading {
+  @apply bg-gray-700 animate-pulse; /* Optional: Add a loading state */
+}
+
+.coupon-banner.loaded {
+  @apply bg-transparent; /* Remove loading state when image is loaded */
+}
+
+/* Add space between the banner and discount cards */
+.grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3.gap-6 {
+  margin-top: 1rem;
 }
