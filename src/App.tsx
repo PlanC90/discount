@@ -259,6 +259,10 @@ function App() {
     setBannerLoaded(true);
   };
 
+  const navigateHome = () => {
+    setActiveTab('home');
+  };
+
   return (
     
     <div className="min-h-screen bg-dark-primary py-8 text-dark-text">
@@ -268,7 +272,8 @@ function App() {
             <img
               src="https://cdn.glitch.global/c0240ef5-b1d3-409c-a790-588d18d5cf32/memexlogo-Photoroom.png"
               alt="MemeX Logo"
-              className="h-12 w-auto mr-4"
+              className="h-12 w-auto mr-4 cursor-pointer"
+              onClick={navigateHome}
             />
             <span className="text-white font-bold text-lg">MemeX Coupon</span>
           </div>
@@ -547,7 +552,7 @@ function App() {
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={()={() => handleDelete(coupon.id)}
+                            onClick={() => handleDelete(coupon.id)}
                             className="text-red-600 hover:text-red-900"
                           >
                             <Trash2 className="w-4 h-4" />
