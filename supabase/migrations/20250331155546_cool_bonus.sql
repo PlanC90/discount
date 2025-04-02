@@ -30,14 +30,18 @@ CREATE TABLE IF NOT EXISTS coupons (
 
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Enable read access for all users" ON coupons;
 CREATE POLICY "Enable read access for all users" ON coupons
   FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Enable insert access for all users" ON coupons;
 CREATE POLICY "Enable insert access for all users" ON coupons
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Enable update access for all users" ON coupons;
 CREATE POLICY "Enable update access for all users" ON coupons
   FOR UPDATE USING (true);
 
+DROP POLICY IF EXISTS "Enable delete access for all users" ON coupons;
 CREATE POLICY "Enable delete access for all users" ON coupons
   FOR DELETE USING (true);
