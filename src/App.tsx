@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pencil, Trash2, Plus, X, Check, Loader2, Lock, Home, User, Settings, Eye, EyeOff } from 'lucide-react';
+import { Plus, X, Check, Loader2, Lock, Home, User, Settings, Eye, EyeOff } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { supabase } from './lib/supabase';
 import { hashPassword, verifyPassword } from './lib/auth';
@@ -298,42 +298,81 @@ function App() {
     toast.success('Başarıyla çıkış yaptınız');
   };
 
-  const CouponCard = ({ coupon, onDelete, onEdit }: { coupon: Coupon, onDelete: (id: string) => void, onEdit: (coupon: Coupon) => void }) => (
-    <div className="coupon-card hover:scale-105 transition-transform duration-200">
-      <div className="absolute top-2 right-2 bg-white bg-opacity-30 backdrop-filter backdrop-blur-lg rounded-md text-sm px-2 py-1">
-        {coupon.approved ? 'Approved' : 'Pending'}
-      </div>
-      <div className="coupon-card-content">
-        <h3 className="coupon-title">{coupon.title}</h3>
-        <p className="coupon-description">{coupon.description}</p>
-        <div className="coupon-code-container">
-          <div>
-            <span className="coupon-code-label">Code:</span>
-            <code className="coupon-code">{coupon.code}</code>
-          </div>
-          <div className="coupon-discount-container">
-            <span className="coupon-discount-label">Discount:</span>
-            <span className="coupon-discount">{coupon.discount}%</span>
+  const CouponCard = ({ coupon }: { coupon: Coupon }) => {
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+    useEffect(() => {
+      const timerId = setInterval(() => {
+        setTimeLeft(calculateTimeLeft());
+      }, 1000);
+
+      return () => clearInterval(timerId);
+    }, [coupon.validity_date]);
+
+    function calculateTimeLeft() {
+      if (!coupon.validity_date) return { expired: false, days: 0, hours: 0, minutes: 0, seconds: 0 };
+
+      const validityDate = new Date(coupon.validity_date).getTime();
+      const now = new Date().getTime();
+      const difference = validityDate - now;
+
+      if (difference <= 0) {
+        return { expired: true, days: 0, hours: 0, minutes: 0, seconds: 0 };
+      }
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+      return { expired: false, days, hours, minutes, seconds };
+    }
+
+    return (
+      <div className="coupon-card hover:scale-105 transition-transform duration-200">
+        <div className="absolute top-2 right-2 bg-white bg-opacity-30 backdrop-filter backdrop-blur-lg rounded-md text-sm px-2 py-1">
+          {coupon.approved ? 'Approved' : 'Pending'}
+        </div>
+        <div className="coupon-card-content">
+          <h3 className="coupon-title">{coupon.title}</h3>
+          <p className="coupon-description">{coupon.description}</p>
+          <div className="coupon-code-container">
+            <div>
+              <span className="coupon-code-label">Code:</span>
+              <code className="coupon-code">{coupon.code}</code>
+            </div>
+            <div className="coupon-discount-container">
+              <span className="coupon-discount-label">Discount:</span>
+              <span className="coupon-discount">{coupon.discount}%</span>
+            </div>
           </div>
         </div>
-      </div>
-      {coupon.image_url && (
         <img
-          src={coupon.image_url}
+          src={coupon.image_url || 'https://cdn.glitch.global/c0240ef5-b1d3-409c-a790-588d18d5cf32/discount.png'}
           alt="Coupon"
           className="coupon-image"
         />
-      )}
-      <div className="coupon-actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-        <button onClick={() => onEdit(coupon)} className="coupon-edit-button" style={{ marginBottom: '5px' }}>
-          <Pencil className="w-4 h-4" />
-        </button>
-        <button onClick={() => onDelete(coupon.id)} className="coupon-delete-button">
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="coupon-expiration flip-clock-container">
+          <div className="flip-clock-item">
+            <span className="flip-clock-label">Gün</span>
+            <span className="flip-clock-value">{timeLeft.days}</span>
+          </div>
+          <div className="flip-clock-item">
+            <span className="flip-clock-label">Saat</span>
+            <span className="flip-clock-value">{timeLeft.hours}</span>
+          </div>
+          <div className="flip-clock-item">
+            <span className="flip-clock-label">Dakika</span>
+            <span className="flip-clock-value">{timeLeft.minutes}</span>
+          </div>
+          <div className="flip-clock-item">
+            <span className="flip-clock-label">Saniye</span>
+            <span className="flip-clock-value">{timeLeft.seconds}</span>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const filteredCoupons = coupons.filter(coupon =>
     coupon.approved &&
@@ -881,7 +920,7 @@ function App() {
                       type="url"
                       placeholder="Image URL"
                       value={formData.image_url}
-                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                      onChange={(e) => setFormData({... formData, image_url: e.target.value })}
                       className="form-input"
                     />
                     <input
@@ -934,7 +973,7 @@ function App() {
                         type="button"
                         onClick={() => {
                           setEditingId(null);
-                          setFormData({ title: '', code: '', discount: 0, discount_en: '', validity_date: '', memex_payment: false, description: '', image_url: '', website_link: '', category: '', country: '' });
+                          setFormData({ title: '', code: '', discount: 0, discount_en: '', validity_date:'', memex_payment: false, description: '', image_url: '', website_link: '', category: '', country: '' });
                           setImagePreview(null);
                           setActiveTab('profile');
                           setShowAddCoupon(false);
@@ -953,7 +992,8 @@ function App() {
                       <Plus className="w-4 h-4 mr-2" />
                       Add New Coupon
                     </button>
-                  )}                  </form>
+                  )}
+                </form>
               </div>
             )}
 
@@ -966,8 +1006,6 @@ function App() {
                   <CouponCard
                     key={coupon.id}
                     coupon={coupon}
-                    onDelete={handleDelete}
-                    onEdit={startEditing}
                   />
                 ))
               )}
@@ -1002,8 +1040,6 @@ function App() {
                   <CouponCard
                     key={coupon.id}
                     coupon={coupon}
-                    onDelete={() => { }}
-                    onEdit={() => { }}
                   />
                 ))
               )}
