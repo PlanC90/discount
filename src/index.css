@@ -10,7 +10,7 @@ body {
 }
 
 .nav-button {
-  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md hover:bg-brand-blue transition duration-300 flex items-center;
+  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md hover:bg-brand-blue transition duration-300 flex items-center mr-2;
 }
 
 .nav-button.active {
@@ -18,7 +18,11 @@ body {
 }
 
 .admin-login-button {
-  @apply px-4 py-2 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 flex items-center;
+  @apply px-4 py-2 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 flex items-center mr-2;
+}
+
+.logout-button {
+  @apply px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-300 mr-2;
 }
 
 .form-container {
@@ -115,7 +119,7 @@ body {
 }
 
 .coupon-card {
-  @apply bg-dark-secondary rounded-lg shadow-md overflow-hidden relative;
+  @apply bg-dark-secondary rounded-lg shadow-md overflow-hidden relative flex flex-col items-center; /* Added items-center */
   margin-bottom: 1rem; /* Add space between coupon cards */
 }
 
@@ -125,10 +129,18 @@ body {
 
 .coupon-title {
   @apply text-xl font-semibold text-white mb-2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 }
 
 .coupon-description {
   @apply text-gray-300 mb-4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
 }
 
 .coupon-code-container {
@@ -153,6 +165,7 @@ body {
 
 .coupon-discount {
   @apply text-sm font-bold text-green-500;
+  font-size: 2em;
 }
 
 .coupon-image {
@@ -160,7 +173,8 @@ body {
 }
 
 .search-input {
-  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full;
+  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md focus:ring-2 focus:ring-brand-blue focus:border-transparent;
+  width: 100% !important; /* Make the search input take the full width */
 }
 
 .coupon-banner {
@@ -184,7 +198,7 @@ body {
 }
 
 /* Media query for mobile devices */
-@media (max-width: 767px) {
+@media (max-width: 767px}) {
   .admin-summary-grid {
     @apply grid-cols-1; /* Stack the admin summary cards on smaller screens */
   }
@@ -282,7 +296,7 @@ body {
 
 .flip-clock-container {
   display: flex;
-  justify-content: center;
+  justify-content: space-around; /* Distribute space evenly */
   align-items: center;
   gap: 10px;
   padding: 10px;
@@ -291,12 +305,11 @@ body {
 .flip-clock-item {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: center; /* Center items vertically */
   background-color: #333;
   color: white;
   padding: 5px;
   border-radius: 5px;
-  width: 50px;
 }
 
 .flip-clock-label {
@@ -308,4 +321,90 @@ body {
 .flip-clock-value {
   font-size: 1.2em;
   font-weight: bold;
+}
+
+.collapsible-code {
+  margin-top: 0.5rem;
+}
+
+.collapsible-code-button {
+  @apply px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition duration-300;
+  margin-bottom: 0.5rem;
+}
+
+.collapsible-code-button-small {
+  @apply px-2 py-1 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition duration-300 text-xs;
+  margin-bottom: 0.5rem;
+}
+
+.collapsible-code-content {
+  display: flex;
+  align-items: center;
+}
+
+.copy-code-button {
+  @apply px-2 py-1 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition duration-300 text-xs flex items-center;
+  margin-left: 0.5rem;
+}
+
+/* Styles for the auth page */
+.auth-page-container {
+  @apply flex justify-center space-x-8;
+  padding: 2rem;
+}
+
+.auth-container {
+  @apply bg-dark-secondary rounded-lg shadow-md p-8 w-full max-w-md;
+}
+
+.auth-title {
+  @apply text-2xl font-semibold text-white mb-6 text-center;
+}
+
+.auth-form {
+  @apply space-y-4;
+}
+
+.auth-input {
+  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full;
+}
+
+.auth-input-wrapper {
+  @apply relative;
+}
+
+.auth-toggle-password {
+  @apply absolute right-3 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer;
+}
+
+.auth-submit-button {
+  @apply px-6 py-3 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 w-full;
+}
+
+.coupon-card .coupon-button {
+  background-color: #333; /* Dark background color */
+  color: white; /* White text color */
+  padding: 5px 10px; /* Padding for better button appearance */
+  border-radius: 5px; /* Rounded corners */
+  border: none; /* Remove default border */
+  cursor: pointer; /* Change cursor to pointer on hover */
+  transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+.coupon-card .coupon-button:hover {
+  background-color: #555; /* Darker background color on hover */
+}
+
+.coupon-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Fix white background on member edit screen */
+.admin-table .admin-input {
+  background-color: #333;
+  color: white;
 }

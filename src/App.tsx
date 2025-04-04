@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, X, Check, Loader2, Lock, Home, User, Settings, Eye, EyeOff } from 'lucide-react';
+import { Plus, X, Check, Loader2, Lock, Home, User, Settings, Eye, EyeOff, Copy } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { supabase } from './lib/supabase';
 import { hashPassword, verifyPassword } from './lib/auth';
@@ -19,6 +19,14 @@ interface Coupon {
   country?: string;
   approved?: boolean;
   user_id?: string;
+}
+
+interface UserData {
+  id: string;
+  telegram_username: string;
+  first_name: string;
+  last_name: string;
+  country: string;
 }
 
 const categories = [
@@ -46,7 +54,6 @@ function App() {
     title: '',
     code: '',
     discount: 0,
-    discount_en: '',
     validity_date: '',
     memex_payment: false,
     description: '',
@@ -72,6 +79,16 @@ function App() {
     country: user?.country || '',
     telegramUsername: user?.telegram_username || '',
   });
+  const [memberCount, setMemberCount] = useState(0);
+  const [showMemberList, setShowMemberList] = useState(false);
+  const [memberList, setMemberList] = useState<UserData[]>([]);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [memberFormData, setMemberFormData] = useState({
+    firstName: '',
+    lastName: '',
+    country: '',
+    telegramUsername: '',
+  });
 
   useEffect(() => {
     // Uygulama başlangıcında oturum kontrolü
@@ -81,6 +98,7 @@ function App() {
     }
 
     fetchCoupons();
+    fetchMemberCount();
   }, []);
 
   useEffect(() => {
@@ -141,6 +159,45 @@ function App() {
     }
   };
 
+  const fetchMemberCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('custom_users')
+        .select('*', { count: 'exact', head: true });
+
+      if (error) {
+        console.error("Error fetching member count:", error);
+        toast.error('Failed to load member count');
+        return;
+      }
+
+      setMemberCount(count || 0);
+    } catch (error) {
+      console.error("Error fetching member count:", error);
+      toast.error('Failed to load member count');
+    }
+  };
+
+  const fetchMemberList = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('custom_users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching member list:", error);
+        toast.error('Failed to load member list');
+        return;
+      }
+
+      setMemberList(data || []);
+    } catch (error) {
+      console.error("Error fetching member list:", error);
+      toast.error('Failed to load member list');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -150,7 +207,6 @@ function App() {
           title: formData.title,
           code: formData.code,
           discount: formData.discount,
-          discount_en: formData.discount_en,
           validity_date: formData.validity_date,
           memex_payment: formData.memex_payment,
           description: formData.description,
@@ -168,7 +224,7 @@ function App() {
       }
 
       toast.success('Coupon added successfully');
-      setFormData({ title: '', code: '', discount: 0, discount_en: '', validity_date: '', memex_payment: false, description: '', image_url: '', website_link: '', category: '', country: '' });
+      setFormData({ title: '', code: '', discount: 0, validity_date: '', memex_payment: false, description: '', image_url: '', website_link: '', category: '', country: '' });
       fetchCoupons();
       fetchUserCoupons();
       setShowAddCoupon(false);
@@ -187,7 +243,6 @@ function App() {
           title: formData.title,
           code: formData.code,
           discount: formData.discount,
-          discount_en: formData.discount_en || '',
           validity_date: formData.validity_date || '',
           memex_payment: formData.memex_payment || false,
           description: formData.description || '',
@@ -242,7 +297,6 @@ function App() {
       title: coupon.title,
       code: coupon.code,
       discount: coupon.discount,
-      discount_en: coupon.discount_en || '',
       validity_date: coupon.validity_date || '',
       memex_payment: coupon.memex_payment || false,
       description: coupon.description || '',
@@ -295,11 +349,12 @@ function App() {
     localStorage.removeItem('currentUser');
     setUser(null);
     setActiveTab('home');
-    toast.success('Başarıyla çıkış yaptınız');
+    toast.success('Successfully logged out');
   };
 
-  const CouponCard = ({ coupon }: { coupon: Coupon }) => {
+  const CouponCard = ({ coupon, activeTab }: { coupon: Coupon, activeTab: string }) => {
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+    const [isCodeVisible, setIsCodeVisible] = useState(false);
 
     useEffect(() => {
       const timerId = setInterval(() => {
@@ -328,18 +383,42 @@ function App() {
       return { expired: false, days, hours, minutes, seconds };
     }
 
+    const handleCopyCode = () => {
+      navigator.clipboard.writeText(coupon.code);
+      toast.success('Code copied to clipboard!');
+    };
+
+    if (timeLeft.expired) {
+      return null;
+    }
+
     return (
-      <div className="coupon-card hover:scale-105 transition-transform duration-200">
-        <div className="absolute top-2 right-2 bg-white bg-opacity-30 backdrop-filter backdrop-blur-lg rounded-md text-sm px-2 py-1">
-          {coupon.approved ? 'Approved' : 'Pending'}
-        </div>
+      <div className="coupon-card hover:scale-105 transition-transform duration-200 relative">
+        {activeTab !== 'home' && (
+          <div className="absolute top-2 right-2 bg-white bg-opacity-30 backdrop-filter backdrop-blur-lg rounded-md text-sm px-2 py-1">
+            {coupon.approved ? 'Approved' : 'Pending'}
+          </div>
+        )}
         <div className="coupon-card-content">
           <h3 className="coupon-title">{coupon.title}</h3>
           <p className="coupon-description">{coupon.description}</p>
           <div className="coupon-code-container">
             <div>
               <span className="coupon-code-label">Code:</span>
-              <code className="coupon-code">{coupon.code}</code>
+              <div className="collapsible-code">
+                <button className="collapsible-code-button-small" onClick={() => setIsCodeVisible(!isCodeVisible)}>
+                  {isCodeVisible ? 'Hide Code' : 'Show Code'}
+                </button>
+                {isCodeVisible && (
+                  <div className="collapsible-code-content">
+                    <code className="coupon-code">{coupon.code}</code>
+                    <button onClick={handleCopyCode} className="copy-code-button">
+                      <Copy className="w-3 h-3 mr-2" />
+                      Copy
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="coupon-discount-container">
               <span className="coupon-discount-label">Discount:</span>
@@ -354,22 +433,52 @@ function App() {
         />
         <div className="coupon-expiration flip-clock-container">
           <div className="flip-clock-item">
-            <span className="flip-clock-label">Gün</span>
+            <span className="flip-clock-label">Days</span>
             <span className="flip-clock-value">{timeLeft.days}</span>
           </div>
           <div className="flip-clock-item">
-            <span className="flip-clock-label">Saat</span>
+            <span className="flip-clock-label">Hours</span>
             <span className="flip-clock-value">{timeLeft.hours}</span>
           </div>
           <div className="flip-clock-item">
-            <span className="flip-clock-label">Dakika</span>
+            <span className="flip-clock-label">Minutes</span>
             <span className="flip-clock-value">{timeLeft.minutes}</span>
           </div>
           <div className="flip-clock-item">
-            <span className="flip-clock-label">Saniye</span>
+            <span className="flip-clock-label">Seconds</span>
             <span className="flip-clock-value">{timeLeft.seconds}</span>
           </div>
         </div>
+        {coupon.website_link && (
+          <div className="flex justify-center mt-2">
+            <a
+              href={coupon.website_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 coupon-button"
+            >
+              Go to Website
+            </a>
+          </div>
+        )}
+        {activeTab === 'profile' && (
+          <div className="flex flex-col items-center space-y-2 coupon-content">
+            <div className="flex justify-center space-x-2">
+              <button
+                onClick={() => startEditing(coupon)}
+                className="text-blue-600 hover:text-blue-900 coupon-button"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(coupon.id)}
+                className="text-red-600 hover:text-red-900 coupon-button"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -422,7 +531,7 @@ function App() {
             telegram_username: telegramUsername,
             password_hash: passwordHash,
             first_name: firstName,
-            last_name: lastName,
+            lastName: lastName,
             country: country
           }])
           .select(); // Verileri almayı dene
@@ -430,20 +539,20 @@ function App() {
         if (error) {
           console.error('Kayıt hatası:', error);
           if (error.code === '23505') {
-            toast.error('Bu Telegram kullanıcı adı zaten kullanılıyor');
+            toast.error('This Telegram username is already in use');
           } else {
-            toast.error('Kayıt sırasında bir hata oluştu');
+            toast.error('An error occurred during registration');
           }
           return;
         }
 
         console.log('Kayıt başarılı:', data); // Başarılı kayıt durumunda verileri logla
 
-        toast.success('Başarıyla kaydoldunuz');
+        toast.success('Successfully registered');
         setActiveTab('signIn');
       } catch (err) {
         console.error('Kayıt hatası:', err);
-        toast.error('Kayıt sırasında bir hata oluştu');
+        toast.error('An error occurred during registration');
       }
     };
 
@@ -459,7 +568,7 @@ function App() {
           .single();
 
         if (error) {
-          toast.error('Kullanıcı bulunamadı');
+          toast.error('User not found');
           return;
         }
 
@@ -467,7 +576,7 @@ function App() {
         const isPasswordValid = await verifyPassword(password, data.password_hash);
 
         if (!isPasswordValid) {
-          toast.error('Hatalı şifre');
+          toast.error('Incorrect password');
           return;
         }
 
@@ -483,11 +592,11 @@ function App() {
         localStorage.setItem('currentUser', JSON.stringify(userData));
         setUser(userData);
 
-        toast.success('Başarıyla giriş yaptınız');
+        toast.success('Successfully logged in');
         setActiveTab('profile');
       } catch (err) {
         console.error('Giriş hatası:', err);
-        toast.error('Giriş sırasında bir hata oluştu');
+        toast.error('An error occurred during login');
       }
     };
 
@@ -505,9 +614,9 @@ function App() {
     };
 
     return (
-      <div className="form-container">
-        <h2 className="form-title">{type === 'signIn' ? 'Sign In' : 'Sign Up'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="auth-container">
+        <h2 className="auth-title">{type === 'signIn' ? 'Sign In' : 'Sign Up'}</h2>
+        <form onSubmit={handleSubmit} className="auth-form">
           {type === 'signUp' && (
             <>
               <input
@@ -515,7 +624,7 @@ function App() {
                 placeholder="First Name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="form-input"
+                className="auth-input"
                 required
               />
               <input
@@ -523,13 +632,13 @@ function App() {
                 placeholder="Last Name"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="form-input"
+                className="auth-input"
                 required
               />
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="form-input"
+                className="auth-input"
                 required
               >
                 <option value="">Select Country</option>
@@ -542,7 +651,7 @@ function App() {
                 placeholder="Telegram Username"
                 value={telegramUsername}
                 onChange={(e) => setTelegramUsername(e.target.value)}
-                className="form-input"
+                className="auth-input"
                 required
               />
             </>
@@ -554,29 +663,29 @@ function App() {
                 placeholder="Telegram Username"
                 value={signInTelegramUsername}
                 onChange={(e) => setSignInTelegramUsername(e.target.value)}
-                className="form-input"
+                className="auth-input"
                 required
               />
             </>
           )}
-          <div className="relative">
+          <div className="auth-input-wrapper">
             <input
               type={showPassword ? 'text' : 'password'}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="form-input"
+              className="auth-input"
               required
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer"
+              className="auth-toggle-password"
               onClick={toggleShowPassword}
             >
               {showPassword ? <EyeOff className="w-5 h-5 text-gray-500" /> : <Eye className="w-5 h-5 text-gray-500" />}
             </button>
           </div>
-          <button type="submit" className="form-submit-button">
+          <button type="submit" className="auth-submit-button">
             {type === 'signIn' ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
@@ -639,6 +748,104 @@ function App() {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSave = (e: React.FormEvent, id: string) => {
+    handleEdit(e, id);
+    setEditingId(null);
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setFormData({ title: '', code: '', discount: 0, validity_date: '', memex_payment: false, description: '', image_url: '', website_link: '', category: '', country: '' });
+  };
+
+  const handleToggleMemberList = async () => {
+    setShowMemberList(!showMemberList);
+    if (!showMemberList) {
+      await fetchMemberList();
+    }
+  };
+
+  const handleEditMember = (member: UserData) => {
+    setEditingMemberId(member.id);
+    setMemberFormData({
+      firstName: member.first_name,
+      lastName: member.last_name,
+      country: member.country,
+      telegramUsername: member.telegram_username,
+    });
+  };
+
+  const handleCancelEditMember = () => {
+    setEditingMemberId(null);
+    setMemberFormData({
+      firstName: '',
+      lastName: '',
+      country: '',
+      telegramUsername: '',
+    });
+  };
+
+  const handleUpdateMember = async (e: React.FormEvent, id: string) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase
+        .from('custom_users')
+        .update({
+          first_name: memberFormData.firstName,
+          last_name: memberFormData.lastName,
+          country: memberFormData.country,
+          telegram_username: memberFormData.telegramUsername,
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error("Error during member update:", error);
+        toast.error(`Failed to update member: ${error.message}`);
+        return;
+      }
+
+      toast.success('Member updated successfully');
+      setEditingMemberId(null);
+      fetchMemberList();
+    } catch (error) {
+      console.error("Error during member update:", error);
+      toast.error('Failed to update member');
+    }
+  };
+
+  const handleDeleteMember = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('custom_users')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error("Error during member delete:", error);
+        toast.error(`Failed to delete member: ${error.message}`);
+        return;
+      }
+
+      toast.success('Member deleted successfully');
+      fetchMemberList();
+      fetchMemberCount();
+    } catch (error) {
+      console.error("Error during member delete:", error);
+      toast.error('Failed to delete member');
+    }
+  };
+
+  const handleMemberFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setMemberFormData({
+      ...memberFormData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-dark-primary py-8 text-dark-text">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -666,30 +873,15 @@ function App() {
                 className={`nav-button ${activeTab === 'profile' ? 'active' : ''} mr-2`}
               >
                 <User className="w-5 h-5 mr-1" />
-                Add Coupon
+                Profile
               </button>
             ) : (
-              <>
-                <button
-                  onClick={() => navigateToAuth('signIn')}
-                  className={`nav-button mr-2`}
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => navigateToAuth('signUp')}
-                  className={`nav-button mr-2`}
-                >
-                  Register
-                </button>
-                <button
-                  onClick={() => navigateToAuth('signIn')}
-                  className={`nav-button mr-2`}
-                >
-                  <User className="w-5 h-5 mr-1" />
-                  Add Coupon
-                </button>
-              </>
+              <button
+                onClick={() => setActiveTab('loginRegister')}
+                className={`nav-button mr-2 ${activeTab === 'loginRegister' ? 'active' : ''}`}
+              >
+                Login/Register
+              </button>
             )}
             {isAdmin ? (
               <>
@@ -701,7 +893,7 @@ function App() {
                   Admin
                 </button>
                 <button
-                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 logout-button mr-2"
                   onClick={() => {
                     setIsAdmin(false);
                     setAdminPassword('');
@@ -722,7 +914,7 @@ function App() {
             )}
             {user && (
               <button
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 logout-button mr-2"
                 onClick={handleSignOut}
               >
                 Logout
@@ -730,6 +922,17 @@ function App() {
             )}
           </div>
         </div>
+
+        {activeTab === 'loginRegister' && (
+          <div className="auth-page-container">
+            <Auth type="signIn" />
+            <Auth type="signUp" />
+          </div>
+        )}
+
+```tool_code
+
+```
 
         {activeTab === 'signIn' && <Auth type="signIn" />}
         {activeTab === 'signUp' && <Auth type="signUp" />}
@@ -746,7 +949,7 @@ function App() {
             />
             <button
               onClick={handleAdminLogin}
-              className="form-submit-button"
+              className="form-submit-button mt-4"
             >
               Login
             </button>
@@ -769,7 +972,122 @@ function App() {
                 <h3 className="admin-summary-title">Pending Coupons</h3>
                 <p className="admin-summary-value">{coupons.filter(c => !c.approved).length}</p>
               </div>
+              <div className="admin-summary-card">
+                <h3 className="admin-summary-title">
+                  Member Count
+                  <button
+                    onClick={handleToggleMemberList}
+                    className="member-count-button"
+                  >
+                    {memberCount}
+                  </button>
+                </h3>
+              </div>
             </div>
+
+            {showMemberList && (
+              <div className="member-list-container">
+                <h3 className="member-list-title">Member List</h3>
+                <div className="overflow-x-auto">
+                  <table className="admin-table">
+                    <thead className="admin-table-header">
+                      <tr>
+                        <th className="admin-table-header-cell">First Name</th>
+                        <th className="admin-table-header-cell">Last Name</th>
+                        <th className="admin-table-header-cell">Telegram Username</th>
+                        <th className="admin-table-header-cell">Country</th>
+                        <th className="admin-table-header-cell">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="admin-table-body">
+                      {memberList.map((member) => (
+                        <tr key={member.id} className="admin-table-row">
+                          {editingMemberId === member.id ? (
+                            <>
+                              <td className="admin-table-cell">
+                                <input
+                                  type="text"
+                                  name="firstName"
+                                  value={memberFormData.firstName}
+                                  onChange={handleMemberFormChange}
+                                  className="admin-input"
+                                />
+                              </td>
+                              <td className="admin-table-cell">
+                                <input
+                                  type="text"
+                                  name="lastName"
+                                  value={memberFormData.lastName}
+                                  onChange={handleMemberFormChange}
+                                  className="admin-input"
+                                />
+                              </td>
+                              <td className="admin-table-cell">
+                                <input
+                                  type="text"
+                                  name="telegramUsername"
+                                  value={memberFormData.telegramUsername}
+                                  onChange={handleMemberFormChange}
+                                  className="admin-input"
+                                />
+                              </td>
+                              <td className="admin-table-cell">
+                                <select
+                                  name="country"
+                                  value={memberFormData.country}
+                                  onChange={handleMemberFormChange}
+                                  className="admin-input"
+                                >
+                                  <option value="">Select Country</option>
+                                  {countries.map((country) => (
+                                    <option key={country} value={country}>{country}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="admin-table-cell admin-table-actions">
+                                <button
+                                  onClick={(e) => handleUpdateMember(e, member.id)}
+                                  className="text-green-600 hover:text-green-900 mr-3"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={handleCancelEditMember}
+                                  className="text-gray-600 hover:text-gray-900"
+                                >
+                                  Cancel
+                                </button>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="admin-table-cell">{member.first_name}</td>
+                              <td className="admin-table-cell">{member.last_name}</td>
+                              <td className="admin-table-cell">{member.telegram_username}</td>
+                              <td className="admin-table-cell">{member.country}</td>
+                              <td className="admin-table-cell admin-table-actions">
+                                <button
+                                  onClick={() => handleEditMember(member)}
+                                  className="text-blue-600 hover:text-blue-900 mr-3"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMember(member.id)}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -791,7 +1109,7 @@ function App() {
             </div>
 
             {showEditProfile && (
-              <div className="edit-profile-form">
+              <div className="edit-profile-form bg-dark-secondary">
                 <h2 className="form-title">Edit Profile</h2>
                 <form onSubmit={handleProfileUpdate} className="space-y-4">
                   <input
@@ -882,18 +1200,11 @@ function App() {
                   <div className="form-grid">
                     <input
                       type="number"
-                      placeholder="Discount"
+                      placeholder="Discount %"
                       value={formData.discount}
                       onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) })}
                       className="form-input"
                       required
-                    />
-                    <input
-                      type="text"
-                      placeholder="Discount (EN)"
-                      value={formData.discount_en || ''}
-                      onChange={(e) => setFormData({ ...formData, discount_en: e.target.value })}
-                      className="form-input"
                     />
                   </div>
                   <div className="form-grid">
@@ -920,7 +1231,7 @@ function App() {
                       type="url"
                       placeholder="Image URL"
                       value={formData.image_url}
-                      onChange={(e) => setFormData({... formData, image_url: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                       className="form-input"
                     />
                     <input
@@ -930,6 +1241,7 @@ function App() {
                       onChange={(e) => setFormData({ ...formData, website_link: e.target.value })}
                       className="form-input"
                     />
+
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -973,7 +1285,7 @@ function App() {
                         type="button"
                         onClick={() => {
                           setEditingId(null);
-                          setFormData({ title: '', code: '', discount: 0, discount_en: '', validity_date:'', memex_payment: false, description: '', image_url: '', website_link: '', category: '', country: '' });
+                          setFormData({ title: '', code: '', discount: 0, validity_date: '', memex_payment: false, description: '', image_url: '', website_link: '', category: '', country: '' });
                           setImagePreview(null);
                           setActiveTab('profile');
                           setShowAddCoupon(false);
@@ -1006,6 +1318,7 @@ function App() {
                   <CouponCard
                     key={coupon.id}
                     coupon={coupon}
+                    activeTab={activeTab}
                   />
                 ))
               )}
@@ -1040,6 +1353,7 @@ function App() {
                   <CouponCard
                     key={coupon.id}
                     coupon={coupon}
+                    activeTab={activeTab}
                   />
                 ))
               )}
@@ -1070,41 +1384,115 @@ function App() {
                   <tbody className="admin-table-body">
                     {coupons.map((coupon) => (
                       <tr key={coupon.id} className="admin-table-row">
-                        <td className="admin-table-cell">{coupon.title}</td>
-                        <td className="admin-table-cell">{coupon.code}</td>
-                        <td className="admin-table-cell">{coupon.discount}</td>
-                        <td className="admin-table-cell">
-                          {coupon.description && coupon.description.length > 20
-                            ? `${coupon.description.substring(0, 20)}...`
-                            : coupon.description}
-                        </td>
-                        <td className="admin-table-cell">
-                          {coupon.image_url && (
-                            <img src={coupon.image_url} alt="Coupon" className="admin-table-image" />
-                          )}
-                        </td>
-                        <td className="admin-table-cell">
-                          <button
-                            onClick={() => toggleApprove(coupon.id, !!coupon.approved)}
-                            className={`admin-table-approve-button ${coupon.approved ?'bg-green-5500 text-white' : 'bg-red-500 text-white'}`}
-                          >
-                            {coupon.approved ? 'Approved' : 'Approve'}
-                          </button>
-                        </td>
-                        <td className="admin-table-cell admin-table-actions">
-                          <button
-                            onClick={() => startEditing(coupon)}
-                            className="text-blue-600 hover:text-blue-900 mr-3"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(coupon.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
+                        {editingId === coupon.id ? (
+                          <>
+                            <td className="admin-table-cell">
+                              <input
+                                type="text"
+                                name="title"
+                                value={formData.title}
+                                onChange={(e) => handleInputChange(e, coupon.id)}
+                                className="admin-input"
+                              />
+                            </td>
+                            <td className="admin-table-cell">
+                              <input
+                                type="text"
+                                name="code"
+                                value={formData.code}
+                                onChange={(e) => handleInputChange(e, coupon.id)}
+                                className="admin-input"
+                              />
+                            </td>
+                            <td className="admin-table-cell">
+                              <input
+                                type="number"
+                                name="discount"
+                                value={formData.discount}
+                                onChange={(e) => handleInputChange(e, coupon.id)}
+                                className="admin-input"
+                              />
+                            </td>
+                            <td className="admin-table-cell">
+                              <input
+                                type="text"
+                                name="description"
+                                value={formData.description}
+                                onChange={(e) => handleInputChange(e, coupon.id)}
+                                className="admin-input"
+                              />
+                            </td>
+                            <td className="admin-table-cell">
+                              <input
+                                type="url"
+                                name="image_url"
+                                value={formData.image_url}
+                                onChange={(e) => handleInputChange(e, coupon.id)}
+                                className="admin-input"
+                              />
+                            </td>
+                            <td className="admin-table-cell">
+                              <button
+                                onClick={() => toggleApprove(coupon.id, !!coupon.approved)}
+                                className={`admin-table-approve-button ${coupon.approved ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+                              >
+                                {coupon.approved ? 'Approved' : 'Approve'}
+                              </button>
+                            </td>
+                            <td className="admin-table-cell admin-table-actions">
+                              <button
+                                onClick={(e) => handleSave(e, coupon.id)}
+                                className="text-green-600 hover:text-green-900 mr-3"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={handleCancel}
+                                className="text-gray-600 hover:text-gray-900"
+                              >
+                                Cancel
+                              </button>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="admin-table-cell">{coupon.title}</td>
+                            <td className="admin-table-cell">{coupon.code}</td>
+                            <td className="admin-table-cell">{coupon.discount}</td>
+                            <td className="admin-table-cell">
+                              {coupon.description && coupon.description.length > 20
+                                ? `${coupon.description.substring(0, 20)}...`
+                                : coupon.description}
+                            </td>
+                            <td className="admin-table-cell">
+                              {coupon.image_url && (
+                                <img src={coupon.image_url} alt="Coupon" className="admin-table-image" />
+                              )}
+                            </td>
+                            <td className="admin-table-cell">
+                              <button
+                                onClick={() => toggleApprove(coupon.id, !!coupon.approved)}
+                                className={`admin-table-approve-button ${coupon.approved ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+                              >
+                                {coupon.approved ? 'Approved' : 'Approve'}
+                              </button>
+                            </td>
+                            <td className="admin-table-cell admin-table-actions">
+                              <button
+                                onClick={() => startEditing(coupon)}
+                                className="text-blue-600 hover:text-blue-900 mr-3"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(coupon.id)}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </>
+                        )}
                       </tr>
                     ))}
                   </tbody>
