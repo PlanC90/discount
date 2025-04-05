@@ -34,7 +34,6 @@ const Auth: React.FC<AuthProps> = ({ type, setActiveTab, setUser }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [telegramUsername, setTelegramUsername] = useState('');
   const [signInTelegramUsername, setSignInTelegramUsername] = useState('');
-  const [memexPayment, setMemexPayment] = useState(false);
   const [paymentMade, setPaymentMade] = useState(false);
   const [qrCode, setQrCode] = useState('');
 
@@ -44,6 +43,8 @@ const Auth: React.FC<AuthProps> = ({ type, setActiveTab, setUser }) => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log('Registration started'); // Loglama eklendi
 
     try {
       // Hash the password
@@ -60,7 +61,6 @@ const Auth: React.FC<AuthProps> = ({ type, setActiveTab, setUser }) => {
           first_name: firstName,
           last_name: lastName,
           country: country,
-          memex_payment: memexPayment,
           payment_made: paymentMade,
           payment_method: 'Memex'
         }])
@@ -68,10 +68,11 @@ const Auth: React.FC<AuthProps> = ({ type, setActiveTab, setUser }) => {
 
       if (error) {
         console.error('Registration error:', error);
+        console.log('Supabase error details:', error); // Detaylı hata logu
         if (error.code === '23505') {
           toast.error('This Telegram username is already in use');
         } else {
-          toast.error('An error occurred during registration');
+          toast.error(`An error occurred during registration: ${error.message}`);
         }
         return;
       }
@@ -82,7 +83,10 @@ const Auth: React.FC<AuthProps> = ({ type, setActiveTab, setUser }) => {
       setActiveTab('signIn');
     } catch (err) {
       console.error('Registration error:', err);
+      console.log('Error details:', err); // Detaylı hata logu
       toast.error('An error occurred during registration');
+    } finally {
+      console.log('Registration process completed'); // Loglama eklendi
     }
   };
 
@@ -117,7 +121,6 @@ const Auth: React.FC<AuthProps> = ({ type, setActiveTab, setUser }) => {
         first_name: data.first_name,
         last_name: data.last_name,
         country: data.country,
-        memex_payment: data.memex_payment,
         payment_made: data.payment_made,
         payment_method: data.payment_method
       };
@@ -238,6 +241,12 @@ const Auth: React.FC<AuthProps> = ({ type, setActiveTab, setUser }) => {
               Payment Address:
               <br />
               {paymentAddress}
+            </div>
+            <div style={{ marginTop: '10px', marginBottom: '10px', textAlign: 'center' }}>
+              <p style={{ fontSize: '24px', color: 'orange', fontWeight: 'bold' }}>
+                50,000,000 MemeX
+              </p>
+              <p>If payment is not made, the entered coupons will not be approved</p>
             </div>
             <label className="payment-made-label">
               <input
