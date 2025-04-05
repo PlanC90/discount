@@ -411,14 +411,23 @@ body {
   color: white;
 }
 
-.payment-qr-code {
-  width: 200px; /* Adjust as needed */
-  height: 200px; /* Adjust as needed */
-  margin: 10px auto;
-  display: block;
+/* Payment Info Styles */
+.payment-info {
+  @apply mt-4 p-4 rounded-md bg-dark-tertiary;
 }
 
-.enlarged-qr-code {
-  width: 250px;
-  height: 250px;
+.payment-qr-code {
+  @apply w-48 h-48 mx-auto mb-2;
+}
+
+.payment-address {
+  @apply text-sm text-gray-400 break-all;
+}
+
+.payment-made-label {
+  @apply flex items-center mt-2 text-white;
+}
+
+.payment-made-checkbox {
+  @apply mr-2 leading-tight;
 }

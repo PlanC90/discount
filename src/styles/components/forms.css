@@ -1,0 +1,44 @@
+.form-container {
+  @apply bg-dark-secondary rounded-lg shadow-md p-8 mb-8;
+}
+
+.form-title {
+  @apply text-2xl font-semibold text-white mb-6;
+}
+
+.form-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+.form-input,
+.form-textarea {
+  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full;
+}
+
+.form-textarea {
+  @apply resize-none;
+}
+
+.form-image-preview {
+  @apply mt-4 max-h-40 rounded-md;
+}
+
+.add-coupon-form {
+  @apply mt-4;
+}
+
+.auth-form {
+  @apply space-y-4;
+}
+
+.auth-input {
+  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full;
+}
+
+.auth-input-wrapper {
+  @apply relative;
+}
+
+.auth-toggle-password {
+  @apply absolute right-3 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer;
+}

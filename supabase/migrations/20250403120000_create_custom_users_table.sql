@@ -9,5 +9,8 @@ CREATE TABLE IF NOT EXISTS custom_users (
   last_name TEXT,
   country TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  memex_payment BOOLEAN,
+  payment_made BOOLEAN,
+  payment_method TEXT
 );

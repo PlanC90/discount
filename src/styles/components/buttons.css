@@ -1,0 +1,40 @@
+.nav-button {
+  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md hover:bg-brand-blue transition duration-300 flex items-center mr-2;
+}
+
+.nav-button.active {
+  @apply bg-brand-yellow text-dark-primary font-bold;
+}
+
+.admin-login-button {
+  @apply px-4 py-2 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 flex items-center mr-2;
+}
+
+.logout-button {
+  @apply px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-300 mr-2;
+}
+
+.form-submit-button {
+  @apply px-6 py-3 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 flex items-center;
+}
+
+.form-cancel-button {
+  @apply px-6 py-3 bg-dark-tertiary text-white rounded-md hover:bg-gray-600 transition duration-300 flex items-center;
+}
+
+.user-edit-button {
+  @apply px-4 py-2 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300;
+}
+
+.add-coupon-button {
+  @apply px-6 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-300 mb-4;
+}
+
+.coupon-edit-button,
+.coupon-delete-button {
+  @apply px-2 py-1 bg-white bg-opacity-20 hover:bg-opacity-40 rounded-md text-sm text-white transition duration-200 mr-1;
+}
+
+.auth-submit-button {
+  @apply px-6 py-3 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 w-full;
+}

@@ -1,0 +1,98 @@
+.coupon-card {
+  @apply bg-dark-secondary rounded-lg shadow-md overflow-hidden relative flex flex-col items-center;
+  margin-bottom: 1rem;
+}
+
+.coupon-card-content {
+  @apply p-4 w-full;
+}
+
+.coupon-title {
+  @apply text-xl font-semibold text-white mb-2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  height: 3.2em;
+  line-height: 1.6;
+}
+
+.coupon-description {
+  @apply text-gray-300 mb-4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  height: 4.5em;
+  line-height: 1.5;
+}
+
+.coupon-code-container {
+  @apply flex justify-between items-center;
+}
+
+.coupon-code-label {
+  @apply text-sm text-gray-400;
+}
+
+.coupon-code {
+  @apply text-sm font-bold text-brand-yellow;
+}
+
+.coupon-discount-container {
+  @apply flex items-center;
+}
+
+.coupon-discount-label {
+  @apply text-sm text-gray-400 mr-2;
+}
+
+.coupon-discount {
+  @apply text-sm font-bold text-green-500;
+  font-size: 2em;
+}
+
+.coupon-image {
+  @apply w-full h-48 object-cover;
+}
+
+.coupon-banner {
+  @apply w-full h-auto mb-6;
+  object-fit: contain;
+  max-height: none;
+  width: 100%;
+}
+
+.coupon-banner.loading {
+  @apply bg-gray-700 animate-pulse;
+}
+
+.coupon-banner.loaded {
+  @apply bg-transparent;
+}
+
+.coupon-actions {
+  @apply absolute top-2 left-2 flex;
+}
+
+.coupon-button {
+  background-color: #333;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.coupon-button:hover {
+  background-color: #555;
+}
+
+.coupon-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
