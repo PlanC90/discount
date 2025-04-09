@@ -38,3 +38,11 @@
 .auth-submit-button {
   @apply px-6 py-3 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 w-full;
 }
+
+.mobile-nav-button {
+  @apply flex flex-col items-center justify-center text-white hover:text-brand-yellow transition duration-300;
+}
+
+.mobile-nav-button.active {
+  @apply text-brand-yellow;
+}

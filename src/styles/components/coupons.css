@@ -1,98 +1,114 @@
-.coupon-card {
-  @apply bg-dark-secondary rounded-lg shadow-md overflow-hidden relative flex flex-col items-center;
+/* Carousel Styles */
+.carousel-container {
+  position: relative;
+  overflow: hidden;
   margin-bottom: 1rem;
 }
 
-.coupon-card-content {
-  @apply p-4 w-full;
+.carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  transition: transform 0.5s ease-in-out; /* Smooth transition */
 }
 
-.coupon-title {
-  @apply text-xl font-semibold text-white mb-2;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  height: 3.2em;
-  line-height: 1.6;
+.carousel::-webkit-scrollbar {
+  display: none;
 }
 
-.coupon-description {
-  @apply text-gray-300 mb-4;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-  height: 4.5em;
-  line-height: 1.5;
+.carousel-item {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  padding: 0.5rem;
+  transition: transform 0.3s ease-in-out;
 }
 
-.coupon-code-container {
-  @apply flex justify-between items-center;
-}
-
-.coupon-code-label {
-  @apply text-sm text-gray-400;
-}
-
-.coupon-code {
-  @apply text-sm font-bold text-brand-yellow;
-}
-
-.coupon-discount-container {
-  @apply flex items-center;
-}
-
-.coupon-discount-label {
-  @apply text-sm text-gray-400 mr-2;
-}
-
-.coupon-discount {
-  @apply text-sm font-bold text-green-500;
-  font-size: 2em;
-}
-
-.coupon-image {
-  @apply w-full h-48 object-cover;
-}
-
-.coupon-banner {
-  @apply w-full h-auto mb-6;
-  object-fit: contain;
-  max-height: none;
-  width: 100%;
-}
-
-.coupon-banner.loading {
-  @apply bg-gray-700 animate-pulse;
-}
-
-.coupon-banner.loaded {
-  @apply bg-transparent;
-}
-
-.coupon-actions {
-  @apply absolute top-2 left-2 flex;
-}
-
-.coupon-button {
-  background-color: #333;
+.carousel-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(0, 0, 0, 0.5);
   color: white;
-  padding: 5px 10px;
-  border-radius: 5px;
   border: none;
+  padding: 0.5rem;
   cursor: pointer;
-  transition: background-color 0.3s;
+  z-index: 10;
+  border-radius: 0.25rem;
+  transition: background-color 0.3s ease;
 }
 
-.coupon-button:hover {
-  background-color: #555;
+.carousel-button:hover {
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
-.coupon-content {
+.carousel-button.left {
+  left: 0.5rem;
+}
+
+.carousel-button.right {
+  right: 0.5rem;
+}
+
+.flip-clock-container {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  width: auto;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.flip-clock-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.flip-clock-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
+  padding: 0 0.25rem;
+  border-radius: 0;
+  width: auto;
+  text-align: left;
+  margin-bottom: 0;
+}
+
+.flip-clock-label {
+  font-size: 0.6rem;
+  color: #D3D3D3;
+  text-transform: uppercase;
+  margin-right: 0;
+}
+
+.flip-clock-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.dark-bg {
+  background-color: #343a40;
+  padding: 0.5rem;
+  border-radius: 5px;
+  margin: 0 0.25rem;
+}
+
+.green-button {
+  background-color: #4CAF50; /* Green */
+  border: none;
+  color: white;
+  padding: 5px 10px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 5px;
 }

@@ -1,33 +1,71 @@
-import React from 'react';
-import { Plus, X, Check } from 'lucide-react';
-
+import React, { useState, useEffect } from 'react';
+import { Plus, X, Check, Loader2, Lock, Home, User, Settings, Eye, EyeOff, Copy, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import CouponCard from './CouponCard';
+import { supabase } from '../lib/supabase';
+
+interface Coupon {
+  id: string;
+  title: string;
+  code: string;
+  discount: number;
+  discount_en?: string;
+  validity_date?: string;
+  memex_payment?: boolean;
+  description?: string;
+  image_url?: string;
+  website_link?: string;
+  category?: string;
+  country: string;
+  approved?: boolean;
+  user_id?: string;
+  brand?: string;
+}
 
 interface ProfileProps {
   user: any;
-  userCoupons: any[];
+  userCoupons: Coupon[];
   showEditProfile: boolean;
-  profileFormData: any;
+  profileFormData: {
+    firstName: string;
+    lastName: string;
+    country: string;
+    telegramUsername: string;
+  };
   countries: string[];
   handleProfileEdit: () => void;
   handleProfileFormChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  handleProfileUpdate: (e: React.FormEvent) => Promise<void>;
   setShowEditProfile: (show: boolean) => void;
   showAddCoupon: boolean;
-  formData: any;
+  formData: {
+    title: string;
+    code: string;
+    discount: number;
+    validity_date: string;
+    memex_payment: boolean;
+    description: string;
+    image_url: string;
+    website_link: string;
+    category: string;
+    country: string;
+    brand: string;
+  };
   categories: string[];
   countriesList: string[];
   editingId: string | null;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   handleEdit: (e: React.FormEvent, id: string) => Promise<void>;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, name: string) => void;
-  handleSave: (e: React.FormEvent, id: string) => void;
+  handleSave: (e: React.FormEvent) => Promise<void>;
   handleCancel: () => void;
-  setImagePreview: (preview: string | null) => void;
+  setImagePreview: (url: string | null) => void;
   imagePreview: string | null;
   setShowAddCoupon: (show: boolean) => void;
-  startEditing: (coupon: any) => void;
-  handleDelete: (id: string) => Promise<void>;
+  startEditing: (coupon: Coupon) => void;
+  handleDelete: (id: string) => void;
+  handleProfileUpdate: (e: React.FormEvent) => Promise<void>;
 }
 
 const Profile: React.FC<ProfileProps> = ({
@@ -38,7 +76,6 @@ const Profile: React.FC<ProfileProps> = ({
   countries,
   handleProfileEdit,
   handleProfileFormChange,
-  handleProfileUpdate,
   setShowEditProfile,
   showAddCoupon,
   formData,
@@ -55,78 +92,284 @@ const Profile: React.FC<ProfileProps> = ({
   setShowAddCoupon,
   startEditing,
   handleDelete,
+  handleProfileUpdate
 }) => {
+  const [startDate, setStartDate] = useState<Date | null>(formData.validity_date ? new Date(formData.validity_date) : null);
+  const [discountType, setDiscountType] = useState<'discount' | 'campaign'>('discount');
+  const [campaignEarnings, setCampaignEarnings] = useState<number | ''>('');
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [userBrands, setUserBrands] = useState<string[]>([]);
+  const [userSpecificCoupons, setUserSpecificCoupons] = useState<Coupon[]>([]);
+
+  useEffect(() => {
+    if (startDate) {
+      handleInputChange({ target: { value: startDate.toISOString().split('T')[0], name: 'validity_date' } } as any, 'validity_date');
+    }
+  }, [startDate]);
+
+  useEffect(() => {
+    const fetchAvailableBrands = async () => {
+      try {
+        const brandsSet = new Set<string>();
+        if (userCoupons && Array.isArray(userCoupons)) {
+          userCoupons.forEach(coupon => {
+            if (coupon.brand) {
+              brandsSet.add(coupon.brand);
+            }
+          });
+        }
+
+        const { data, error } = await supabase
+          .from('coupons')
+          .select('brand')
+          .not('brand', 'is', null);
+
+        if (error) {
+          throw error;
+        }
+
+        data.forEach(coupon => {
+          if (coupon.brand) {
+            brandsSet.add(coupon.brand);
+          }
+        });
+
+        setAvailableBrands(Array.from(brandsSet));
+      } catch (error: any) {
+        toast.error(`Failed to fetch brands: ${error.message}`);
+      }
+    };
+
+    fetchAvailableBrands();
+  }, [userCoupons]);
+
+  useEffect(() => {
+    const fetchUserBrands = async () => {
+      try {
+        const brandsSet = new Set<string>();
+        if (userCoupons && Array.isArray(userCoupons)) {
+          userCoupons.forEach(coupon => {
+            if (coupon.brand && coupon.user_id === user.id) {
+              brandsSet.add(coupon.brand);
+            }
+          });
+        }
+        setUserBrands(Array.from(brandsSet));
+      } catch (error: any) {
+        toast.error(`Failed to fetch user brands: ${error.message}`);
+      }
+    };
+
+    fetchUserBrands();
+  }, [userCoupons, user.id]);
+
+  useEffect(() => {
+    // Filter coupons to only show those created by the current user
+    if (user && userCoupons) {
+      const filteredCoupons = userCoupons.filter(coupon => coupon.user_id === user.id);
+      setUserSpecificCoupons(filteredCoupons);
+    } else {
+      setUserSpecificCoupons([]);
+    }
+  }, [user, userCoupons]);
+
+  const handleDiscountTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setDiscountType(e.target.value as 'discount' | 'campaign');
+  };
+
+  const handleCampaignEarningsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCampaignEarnings(e.target.value === '' ? '' : Number(e.target.value));
+    handleInputChange({ target: { value: e.target.value, name: 'discount' } } as any, 'discount');
+  };
+
+  const handleSaveCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .update({
+          title: formData.title,
+          code: formData.code,
+          discount: formData.discount,
+          validity_date: formData.validity_date,
+          memex_payment: formData.memex_payment,
+          description: formData.description,
+          image_url: formData.image_url,
+          website_link: formData.website_link,
+          category: formData.category,
+          country: formData.country,
+          brand: formData.brand,
+        })
+        .eq('id', editingId)
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Coupon updated successfully!');
+      handleCancel();
+    } catch (error: any) {
+      toast.error(`Failed to update coupon: ${error.message}`);
+    }
+  };
+
+  const handleAddCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Extract only the necessary data from formData
+    const couponData = {
+      title: formData.title,
+      code: formData.code,
+      discount: formData.discount,
+      validity_date: formData.validity_date,
+      memex_payment: formData.memex_payment,
+      description: formData.description,
+      image_url: formData.image_url,
+      website_link: formData.website_link,
+      category: formData.category,
+      country: formData.country,
+      user_id: user.id,
+      brand: formData.brand,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .insert([couponData]);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Coupon added successfully!');
+      setShowAddCoupon(false);
+    } catch (error: any) {
+      toast.error(`Failed to add coupon: ${error.message}`);
+    }
+  };
+
+  const createBrandPage = (brand: string) => {
+    const pageContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Edit Brand: ${brand}</title>
+      </head>
+      <body>
+        <h1>Edit Brand: ${brand}</h1>
+        <p>Here you can edit the details for the brand: ${brand}</p>
+        <p>This is a placeholder page. Functionality to edit brand details will be added later.</p>
+      </body>
+      </html>
+    `;
+    const blob = new Blob([pageContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    return url;
+  };
+
   return (
-    <div className="form-container">
+    <div className="profile-container">
+      {/* Added Brands Section */}
+      <div className="user-brands-section">
+        <h3 className="user-brands-title">Your Brands</h3>
+        <div className="user-brands-list">
+          {Array.isArray(userBrands) && userBrands.length > 0 ? (
+            userBrands.map((brand, index) => {
+              const brandPageUrl = createBrandPage(brand);
+              return (
+                <a key={index} href={brandPageUrl} target="_blank" rel="noopener noreferrer" className="user-brand-item">
+                  {brand}
+                </a>
+              );
+            })
+          ) : (
+            <p>No brands added yet.</p>
+          )}
+        </div>
+      </div>
+
       <div className="user-info-summary">
         <div className="user-info-card">
-          <h3 className="user-info-title">Welcome, {user?.first_name}</h3>
-          <button className="user-edit-button" onClick={handleProfileEdit}>Edit Profile</button>
+          <h3 className="user-info-title">Personal Information</h3>
+          <p><strong>First Name:</strong> {user?.first_name}</p>
+          <p><strong>Last Name:</strong> {user?.last_name}</p>
+          <p><strong>Telegram Username:</strong> {user?.telegram_username}</p>
+          <p><strong>Country:</strong> {user?.country}</p>
+          <button className="user-edit-button" onClick={() => setShowEditProfile(true)}>
+            Edit Profile
+          </button>
         </div>
+
         <div className="user-stats-card">
-          <h3 className="user-stats-title">Coupons Added</h3>
-          <p className="user-stats-value">{userCoupons.length}</p>
-        </div>
-        <div className="user-stats-card">
-          <h3 className="user-stats-title">Total Clicks</h3>
-          <p className="user-stats-value">0</p>
+          <h3 className="user-stats-title">Coupon Statistics</h3>
+          <p><strong>Total Coupons:</strong> {userCoupons?.length}</p>
         </div>
       </div>
 
       {showEditProfile && (
-        <div className="edit-profile-form bg-dark-secondary">
+        <div className="form-container">
           <h2 className="form-title">Edit Profile</h2>
-          <form onSubmit={handleProfileUpdate} className="space-y-4">
-            <input
-              type="text"
-              name="firstName"
-              placeholder="First Name"
-              value={profileFormData.firstName}
-              onChange={handleProfileFormChange}
-              className="form-input"
-              required
-            />
-            <input
-              type="text"
-              name="lastName"
-              placeholder="Last Name"
-              value={profileFormData.lastName}
-              onChange={handleProfileFormChange}
-              className="form-input"
-              required
-            />
-            <select
-              name="country"
-              value={profileFormData.country}
-              onChange={handleProfileFormChange}
-              className="form-input"
-              required
-            >
-              <option value="">Select Country</option>
-              {countries.map((country) => (
-                <option key={country} value={country}>{country}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              name="telegramUsername"
-              placeholder="Telegram Username"
-              value={profileFormData.telegramUsername}
-              onChange={handleProfileFormChange}
-              className="form-input"
-              required
-            />
-            <div className="flex space-x-2">
+          <form onSubmit={handleProfileUpdate} className="form-grid">
+            <div>
+              <label htmlFor="firstName" className="form-label">First Name:</label>
+              <input
+                type="text"
+                id="firstName"
+                name="firstName"
+                value={profileFormData.firstName}
+                onChange={handleProfileFormChange}
+                className="form-input"
+              />
+            </div>
+            <div>
+              <label htmlFor="lastName" className="form-label">Last Name:</label>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                value={profileFormData.lastName}
+                onChange={handleProfileFormChange}
+                className="form-input"
+              />
+            </div>
+            <div>
+              <label htmlFor="telegramUsername" className="form-label">Telegram Username:</label>
+              <input
+                type="text"
+                id="telegramUsername"
+                name="telegramUsername"
+                value={profileFormData.telegramUsername}
+                onChange={handleProfileFormChange}
+                className="form-input"
+              />
+            </div>
+            <div>
+              <label htmlFor="country" className="form-label">Country:</label>
+              <select
+                id="country"
+                name="country"
+                value={profileFormData.country}
+                onChange={handleProfileFormChange}
+                className="form-input"
+              >
+                <option value="">Select Country</option>
+                {countries.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-span-2 flex justify-end">
               <button type="submit" className="form-submit-button">
-                <Check className="w-4 h-4 mr-2" />
-                Save
+                Update Profile
               </button>
               <button
                 type="button"
+                className="form-cancel-button ml-2"
                 onClick={() => setShowEditProfile(false)}
-                className="form-cancel-button"
               >
-                <X className="w-4 h-4 mr-2" />
                 Cancel
               </button>
             </div>
@@ -134,160 +377,212 @@ const Profile: React.FC<ProfileProps> = ({
         </div>
       )}
 
-      <button className="add-coupon-button" onClick={() => setShowAddCoupon(!showAddCoupon)}>
-        {showAddCoupon ? 'Hide Coupon Form' : 'Add New Coupon'}
-      </button>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-semibold text-white">Your Coupons</h2>
+        <button className="add-coupon-button" onClick={() => setShowAddCoupon(!showAddCoupon)}>
+          {showAddCoupon ? 'Cancel Add Coupon' : 'Add Coupon'}
+        </button>
+      </div>
 
       {showAddCoupon && (
-        <div className="add-coupon-form">
-          <h2 className="form-title">
-            {editingId ? 'Edit Coupon' : 'Add New Coupon'}
-          </h2>
-          <form onSubmit={editingId ? (e) => handleEdit(e, editingId) : handleSubmit} className="space-y-4">
-            <div className="form-grid">
+        <div className="form-container">
+          <h2 className="form-title">{editingId ? 'Edit Coupon' : 'Add Coupon'}</h2>
+          <form onSubmit={editingId ? (e) => handleSaveCoupon(e) : handleAddCoupon} className="form-grid">
+            <div className="col-span-2">
+              <label htmlFor="title" className="form-label">Title:</label>
               <input
                 type="text"
+                id="title"
                 name="title"
-                placeholder="Title"
                 value={formData.title}
                 onChange={(e) => handleInputChange(e, 'title')}
                 className="form-input"
                 required
               />
+            </div>
+            <div className="col-span-2">
+              <label htmlFor="code" className="form-label">Code:</label>
               <input
                 type="text"
+                id="code"
                 name="code"
-                placeholder="Code"
                 value={formData.code}
                 onChange={(e) => handleInputChange(e, 'code')}
                 className="form-input"
                 required
               />
             </div>
-            <div className="form-grid">
-              <input
-                type="number"
-                name="discount"
-                placeholder="Discount %"
-                value={formData.discount}
-                onChange={(e) => handleInputChange(e, 'discount')}
+            <div>
+              <label htmlFor="discountType" className="form-label">Discount Type:</label>
+              <select
+                id="discountType"
+                name="discountType"
+                value={discountType}
+                onChange={handleDiscountTypeChange}
                 className="form-input"
-                required
-              />
+              >
+                <option value="discount">Discount</option>
+                <option value="campaign">Campaign</option>
+              </select>
             </div>
-            <div className="form-grid">
-              <input
-                type="date"
-                name="validity_date"
-                placeholder="Validity Date"
-                value={formData.validity_date || ''}
-                onChange={(e) => handleInputChange(e, 'validity_date')}
-                className="form-input"
-              />
-              <div className="flex items-center">
+            {discountType === 'discount' ? (
+              <div>
+                <label htmlFor="discount" className="form-label">Discount:</label>
                 <input
-                  type="checkbox"
-                  id="memex_payment"
-                  name="memex_payment"
-                  checked={formData.memex_payment || false}
-                  onChange={(e) => handleInputChange(e, 'memex_payment')}
-                  className="form-checkbox"
+                  type="number"
+                  id="discount"
+                  name="discount"
+                  value={formData.discount}
+                  onChange={(e) => handleInputChange(e, 'discount')}
+                  className="form-input"
+                  required
                 />
-                <label htmlFor="memex_payment" className="ml-2 text-sm">Memex Payment</label>
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="campaignEarnings" className="form-label">Campaign Earnings:</label>
+                <input
+                  type="number"
+                  id="campaignEarnings"
+                  name="campaignEarnings"
+                  value={campaignEarnings}
+                  onChange={handleCampaignEarningsChange}
+                  className="form-input"
+                  required
+                />
+              </div>
+            )}
+            <div>
+              <div className="flex flex-col">
+                <label htmlFor="validity_date" className="form-label">Validity Date:</label>
+                <DatePicker
+                  selected={startDate}
+                  onChange={(date: Date | null) => setStartDate(date)}
+                  dateFormat="dd.MM.yyyy"
+                  className="form-input"
+                  placeholderText="gg.aa.yyyy"
+                />
               </div>
             </div>
-            <div className="grid grid-cols-1 space-y-4">
+            <div>
+              <label htmlFor="memex_payment" className="form-label">
+                If your business or site accepts payments with MemeX, check this box:
+              </label>
+              <select
+                id="memex_payment"
+                name="memex_payment"
+                value={formData.memex_payment ? 'true' : 'false'}
+                onChange={(e) => handleInputChange(e, 'memex_payment')}
+                className="form-input"
+              >
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="description" className="form-label">Description:</label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={(e) => handleInputChange(e, 'description')}
+                className="form-input form-textarea"
+              />
+            </div>
+            <div>
+              <label htmlFor="image_url" className="form-label">Add Image URL:</label>
               <input
-                type="url"
+                type="text"
+                id="image_url"
                 name="image_url"
-                placeholder="Image URL"
                 value={formData.image_url}
-                onChange={(e) => handleInputChange(e, 'image_url')}
+                onChange={(e) => {
+                  handleInputChange(e, 'image_url');
+                }}
                 className="form-input"
               />
+              {imagePreview && <img src={imagePreview} alt="Preview" className="form-image-preview" />}
+            </div>
+            <div>
+              <label htmlFor="website_link" className="form-label">Website Link:</label>
               <input
-                type="url"
+                type="text"
+                id="website_link"
                 name="website_link"
-                placeholder="Website Link"
                 value={formData.website_link}
                 onChange={(e) => handleInputChange(e, 'website_link')}
                 className="form-input"
               />
-
+            </div>
+            <div>
+              <label htmlFor="category" className="form-label">Select Category</label>
               <select
+                id="category"
                 name="category"
                 value={formData.category}
                 onChange={(e) => handleInputChange(e, 'category')}
                 className="form-input"
               >
-                <option value="">Select Category</option>
+                <option value="">Select a category</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label htmlFor="country" className="form-label">Select Country</label>
               <select
+                id="country"
                 name="country"
                 value={formData.country}
                 onChange={(e) => handleInputChange(e, 'country')}
                 className="form-input"
-                            >
-                <option value="">Select Country</option>
+              >
+                <option value="">Select a country</option>
+                <option value="all">Select All Countries</option>
                 {countriesList.map((country) => (
-                  <option key={country} value={country}>{country}</option>
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
                 ))}
               </select>
-              <textarea
-                name="description"
-                placeholder="Description"
-                value={formData.description}
-                onChange={(e) => handleInputChange(e, 'description')}
-                className="form-textarea"
-              />
-              {imagePreview && (
-                <img src={imagePreview}alt="Image Preview" className="form-image-preview" />
-              )}
             </div>
-            {editingId ? (
-              <div className="flex space-x-2">
-                <button
-                  type="submit"
-                  className="form-submit-button"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleCancel();
-                    setImagePreview(null);
-                    setShowAddCoupon(false);
-                  }}
-                  className="form-cancel-button"
-                >
-                  <X className="w-4 h-4 mr-2" />
+            <div>
+              <label htmlFor="brand" className="form-label">Brand:</label>
+              <input
+                type="text"
+                id="brand"
+                name="brand"
+                value={formData.brand}
+                onChange={(e) => handleInputChange(e, 'brand')}
+                className="form-input"
+                list="brandOptions"
+              />
+              <datalist id="brandOptions">
+                {availableBrands.map((brand, index) => (
+                  <option key={index} value={brand} />
+                ))}
+              </datalist>
+            </div>
+            <div className="col-span-2 flex justify-end">
+              <button type="submit" className="form-submit-button">
+                {editingId ? 'Save Coupon' : 'Add Coupon'}
+              </button>
+              {editingId ? (
+                <button type="button" className="form-cancel-button ml-2" onClick={handleCancel}>
                   Cancel
                 </button>
-              </div>
-            ) : (
-              <button
-                type="submit"
-                className="form-submit-button"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Coupon
-              </button>
-            )}
+              ) : null}
+            </div>
           </form>
         </div>
       )}
 
-      <h3 className="form-title">My Coupons</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {userCoupons.length === 0 ? (
-          <p className="text-center py-8 text-gray-500">You haven't added any coupons yet.</p>
-        ) : (
-          userCoupons.map((coupon) => (
+        {userSpecificCoupons && Array.isArray(userSpecificCoupons) ? (
+          userSpecificCoupons.map((coupon) => (
             <CouponCard
               key={coupon.id}
               coupon={coupon}
@@ -296,6 +591,8 @@ const Profile: React.FC<ProfileProps> = ({
               handleDelete={handleDelete}
             />
           ))
+        ) : (
+          <p>No coupons available.</p>
         )}
       </div>
     </div>

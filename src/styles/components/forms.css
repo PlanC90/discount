@@ -42,3 +42,7 @@
 .auth-toggle-password {
   @apply absolute right-3 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer;
 }
+
+.larger-checkbox {
+  transform: scale(5); /* Increase the size of the checkbox */
+}

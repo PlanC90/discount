@@ -4,19 +4,21 @@ import { toast } from 'react-hot-toast';
 
 interface Coupon {
   id: string;
+  id: string;
   title: string;
   code: string;
-  discount: number;
+  discount: number | null;
   discount_en?: string;
   validity_date?: string;
   memex_payment?: boolean;
   description?: string;
   image_url?: string;
-  website_link?: string;
   category?: string;
   country?: string;
   approved?: boolean;
   user_id?: string;
+  brand?: string;
+  website_link?: string;
 }
 
 interface CouponCardProps {
@@ -58,21 +60,61 @@ const CouponCard: React.FC<CouponCardProps> = ({ coupon, activeTab, startEditing
   }
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(coupon.code);
-    toast.success('Code copied to clipboard!');
+    try {
+      navigator.clipboard.writeText(coupon.code)
+        .then(() => {
+          toast.success('Code copied to clipboard!');
+        })
+        .catch(err => {
+          console.error('Failed to copy text: ', err);
+          fallbackCopyTextToClipboard(coupon.code);
+        });
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+      fallbackCopyTextToClipboard(coupon.code);
+    }
   };
+
+  function fallbackCopyTextToClipboard(text: string) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      const msg = successful ? 'successful' : 'unsuccessful';
+      console.log('Fallback: Copying text command was ' + msg);
+      toast.success('Code copied to clipboard!');
+    } catch (err) {
+      console.error('Fallback: Oops, unable to copy', err);
+      toast.error('Failed to copy code!');
+    }
+
+    document.body.removeChild(textArea);
+  }
 
   if (timeLeft.expired) {
     return null;
   }
 
   return (
-    <div className="coupon-card hover:scale-105 transition-transform duration-200 relative">
-      {activeTab !== 'home' && (
-        <div className="absolute top-2 right-2 bg-white bg-opacity-30 backdrop-filter backdrop-blur-lg rounded-md text-sm px-2 py-1">
-          {coupon.approved ? 'Approved' : 'Pending'}
-        </div>
+    <div className="coupon-card hover:scale-105 transition-transform duration-200 relative flex flex-row justify-between">
+      {activeTab !== 'admin' && activeTab !== 'home' && (
+        <></>
       )}
+      <img
+        src={coupon.image_url || 'https://cdn.glitch.global/c0240ef5-b1d3-409c-a790-588d18d5cf32/discount.png'}
+        alt="Coupon"
+        className="coupon-image"
+      />
       <div className="coupon-card-content">
         <h3 className="coupon-title">{coupon.title}</h3>
         <p className="coupon-description">{coupon.description}</p>
@@ -80,7 +122,7 @@ const CouponCard: React.FC<CouponCardProps> = ({ coupon, activeTab, startEditing
           <div>
             <span className="coupon-code-label">Code:</span>
             <div className="collapsible-code">
-              <button className="collapsible-code-button-small" onClick={() => setIsCodeVisible(!isCodeVisible)}>
+              <button className="collapsible-code-button-small green-button" onClick={() => setIsCodeVisible(!isCodeVisible)}>
                 {isCodeVisible ? 'Hide Code' : 'Show Code'}
               </button>
               {isCodeVisible && (
@@ -95,64 +137,70 @@ const CouponCard: React.FC<CouponCardProps> = ({ coupon, activeTab, startEditing
             </div>
           </div>
           <div className="coupon-discount-container">
-            <span className="coupon-discount-label">Discount:</span>
-            <span className="coupon-discount">{coupon.discount}%</span>
+            <span className="coupon-discount-label">
+              {coupon.discount_en ? 'Campaign Earnings:' : 'Discount:'}
+            </span>
+            <span className="coupon-discount" style={{ color: coupon.discount_en ? 'green' : coupon.discount !== null ? 'orange' : 'inherit', fontWeight: 'bold', fontSize: '2em' }}>
+              {coupon.discount_en ? `$${coupon.discount_en}` : coupon.discount !== null ? `${coupon.discount}%` : 'N/A'}
+            </span>
           </div>
         </div>
       </div>
-      <img
-        src={coupon.image_url || 'https://cdn.glitch.global/c0240ef5-b1d3-409c-a790-588d18d5cf32/discount.png'}
-        alt="Coupon"
-        className="coupon-image"
-      />
-      <div className="coupon-expiration flip-clock-container">
-        <div className="flip-clock-item">
-          <span className="flip-clock-label">Days</span>
-          <span className="flip-clock-value">{timeLeft.days}</span>
-        </div>
-        <div className="flip-clock-item">
-          <span className="flip-clock-label">Hours</span>
-          <span className="flip-clock-value">{timeLeft.hours}</span>
-        </div>
-        <div className="flip-clock-item">
-          <span className="flip-clock-label">Minutes</span>
-          <span className="flip-clock-value">{timeLeft.minutes}</span>
-        </div>
-        <div className="flip-clock-item">
-          <span className="flip-clock-label">Seconds</span>
-          <span className="flip-clock-value">{timeLeft.seconds}</span>
-        </div>
-      </div>
-      {coupon.website_link && (
-        <div className="flex justify-center mt-2">
-          <a
-            href={coupon.website_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2 bg-brand-blue text-white rounded-md hover:bg-blue-600 transition duration-300 coupon-button"
-          >
-            Go to Website
-          </a>
-        </div>
-      )}
-      {activeTab === 'profile' && startEditing && handleDelete && (
-        <div className="flex flex-col items-center space-y-2 coupon-content">
-          <div className="flex justify-center space-x-2">
-            <button
-              onClick={() => startEditing(coupon)}
-              className="text-blue-600 hover:text-blue-900 coupon-button"
+      <div className="coupon-details flex flex-col"></div>
+      <div className="mt-auto flex flex-col">
+        {coupon.website_link ? (
+          <div className="flex justify-center mt-2 h-12">
+            <a
+              href={coupon.website_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="go-to-website-button"
             >
-              Edit
-            </button>
-            <button
-              onClick={() => handleDelete(coupon.id)}
-              className="text-red-600 hover:text-red-900 coupon-button"
-            >
-              Delete
-            </button>
+              Go to Website
+            </a>
+          </div>
+        ) : (
+          <div className="h-12" />
+        )}
+        <div className="flip-clock-container">
+          <div className="flip-clock-row">
+            <div className="flip-clock-item dark-bg">
+              <span className="flip-clock-label">Days</span>
+              <span className="flip-clock-value">{timeLeft.days}</span>
+            </div>
+            <div className="flip-clock-item dark-bg">
+              <span className="flip-clock-label">Hours</span>
+              <span className="flip-clock-value">{timeLeft.hours}</span>
+            </div>
+            <div className="flip-clock-item dark-bg">
+              <span className="flip-clock-label">Minutes</span>
+              <span className="flip-clock-value">{timeLeft.minutes}</span>
+            </div>
+            <div className="flip-clock-item dark-bg">
+              <span className="flip-clock-label">Seconds</span>
+              <span className="flip-clock-value">{timeLeft.seconds}</span>
+            </div>
           </div>
         </div>
-      )}
+        {activeTab === 'profile' && startEditing && handleDelete && (
+          <div className="flex flex-col items-center space-y-2 coupon-content">
+            <div className="flex justify-center space-x-2">
+              <button
+                onClick={() => startEditing(coupon)}
+                className="text-blue-600 hover:text-blue-900 coupon-button"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(coupon.id)}
+                className="text-red-600 hover:text-red-900 coupon-button"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -431,3 +431,9 @@ body {
 .payment-made-checkbox {
   @apply mr-2 leading-tight;
 }
+
+/* Pagination Styles */
+.pagination-link.active {
+  background-color: #4CAF50;
+  border-color: #4CAF50;
+}
