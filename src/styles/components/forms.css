@@ -1,48 +1,92 @@
-.form-container {
-  @apply bg-dark-secondary rounded-lg shadow-md p-8 mb-8;
-}
+import React, { useState } from "react";
+import { Plus, X } from "lucide-react";
 
-.form-title {
-  @apply text-2xl font-semibold text-white mb-6;
-}
+const AddCouponForm: React.FC = () => {
+  const [couponCode, setCouponCode] = useState("");
+  const [discount, setDiscount] = useState("");
+  const [description, setDescription] = useState("");
 
-.form-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
-}
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Kuponu gönder
+    console.log({ couponCode, discount, description });
+  };
 
-.form-input,
-.form-textarea {
-  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full;
-}
+  const handleCancel = () => {
+    // Formu sıfırla
+    setCouponCode("");
+    setDiscount("");
+    setDescription("");
+  };
 
-.form-textarea {
-  @apply resize-none;
-}
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="bg-dark-secondary rounded-lg shadow-md p-8 mb-8"
+    >
+      <h2 className="text-2xl font-semibold text-white mb-6">Add New Coupon</h2>
 
-.form-image-preview {
-  @apply mt-4 max-h-40 rounded-md;
-}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="couponCode" className="text-white block mb-1">
+            Coupon Code
+          </label>
+          <input
+            id="couponCode"
+            type="text"
+            className="px-4 py-3 text-sm bg-dark-tertiary text-white border border-dark-border rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full"
+            placeholder="Enter coupon code"
+            value={couponCode}
+            onChange={(e) => setCouponCode(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="discount" className="text-white block mb-1">
+            Discount (%)
+          </label>
+          <input
+            id="discount"
+            type="number"
+            className="px-4 py-3 text-sm bg-dark-tertiary text-white border border-dark-border rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full"
+            placeholder="10"
+            value={discount}
+            onChange={(e) => setDiscount(e.target.value)}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label htmlFor="description" className="text-white block mb-1">
+            Description
+          </label>
+          <textarea
+            id="description"
+            rows={4}
+            className="px-4 py-3 text-sm bg-dark-tertiary text-white border border-dark-border rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full resize-none"
+            placeholder="Enter coupon description..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          ></textarea>
+        </div>
+      </div>
 
-.add-coupon-form {
-  @apply mt-4;
-}
+      <div className="flex justify-end space-x-4 mt-6">
+        <button
+          type="submit"
+          className="flex items-center gap-2 px-6 py-2 bg-brand-blue text-white rounded-md font-medium shadow hover:bg-brand-blue/90 transition-colors duration-200"
+        >
+          <Plus size={18} />
+          Add Coupon
+        </button>
+        <button
+          type="button"
+          onClick={handleCancel}
+          className="flex items-center gap-2 px-6 py-2 bg-gray-600 text-white rounded-md font-medium shadow hover:bg-gray-500 transition-colors duration-200"
+        >
+          <X size={18} />
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+};
 
-.auth-form {
-  @apply space-y-4;
-}
-
-.auth-input {
-  @apply px-4 py-2 bg-dark-tertiary text-white rounded-md focus:ring-2 focus:ring-brand-blue focus:border-transparent w-full;
-}
-
-.auth-input-wrapper {
-  @apply relative;
-}
-
-.auth-toggle-password {
-  @apply absolute right-3 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer;
-}
-
-.larger-checkbox {
-  transform: scale(5); /* Increase the size of the checkbox */
-}
+export default AddCouponForm;

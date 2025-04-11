@@ -163,3 +163,8 @@
   color: cyan;
   cursor: pointer;
 }
+
+.coupon-image {
+  width:500px; /* Adjust this value as needed */
+  height:500px;
+}

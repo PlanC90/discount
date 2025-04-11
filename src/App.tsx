@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, X, Check, Loader2, Lock, Home, User, Settings, Eye, EyeOff, Copy, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, X, Check, Loader2, Lock, Home, User, Settings, Eye, EyeOff, Copy, ChevronLeft, ChevronRight, ArrowUp } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 
 import { supabase } from './lib/supabase';
@@ -158,6 +158,7 @@ function App() {
   const [indexOfLastCoupon, setIndexOfLastCoupon] = useState(couponsPerPage);
   const [detectedCountry, setDetectedCountry] = useState<string>('');
   const [clickedCountry, setClickedCountry] = useState<string>('');
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
 
   useEffect(() => {
     // Detect country based on browser language
@@ -181,8 +182,19 @@ function App() {
     handleResize();
     window.addEventListener('resize', handleResize);
 
+    const handleScroll = () => {
+      if (window.scrollY > 200) {
+        setShowScrollToTop(true);
+      } else {
+        setShowScrollToTop(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -559,7 +571,7 @@ function App() {
       fetchMemberCount();
     } catch (error) {
       console.error("Error during member delete:", error);
-      toast.error('Failed to delete member');
+      toast.error('Failed to update member');
     }
   };
 
@@ -681,6 +693,13 @@ function App() {
 
   const handleCountryClick = (country: string) => {
     setClickedCountry(country);
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
   return (
@@ -1050,6 +1069,16 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {showScrollToTop && (
+        <div
+          className="fixed bottom-5 right-5 bg-dark-secondary text-white p-3 rounded-full cursor-pointer z-50"
+          onClick={scrollToTop}
+        >
+          <ArrowUp className="w-6 h-6" />
+        </div>
+      )}
+
       {/* Mobile Menu */}
       <div className="mobile-menu md:hidden fixed bottom-0 left-0 w-full bg-dark-secondary py-2 z-50">
         <div className="flex justify-around items-center">
