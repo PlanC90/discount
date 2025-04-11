@@ -59,13 +59,13 @@ interface ProfileProps {
   handleEdit: (e: React.FormEvent, id: string) => Promise<void>;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, name: string) => void;
   handleSave: (e: React.FormEvent) => Promise<void>;
-  handleCancel: () => void;
   setImagePreview: (url: string | null) => void;
   imagePreview: string | null;
   setShowAddCoupon: (show: boolean) => void;
   startEditing: (coupon: Coupon) => void;
   handleDelete: (id: string) => void;
   handleProfileUpdate: (e: React.FormEvent) => Promise<void>;
+  handleCancel: () => void;
 }
 
 const Profile: React.FC<ProfileProps> = ({
@@ -86,13 +86,13 @@ const Profile: React.FC<ProfileProps> = ({
   handleEdit,
   handleInputChange,
   handleSave,
-  handleCancel,
   setImagePreview,
   imagePreview,
   setShowAddCoupon,
   startEditing,
   handleDelete,
-  handleProfileUpdate
+  handleProfileUpdate,
+  handleCancel
 }) => {
   const [startDate, setStartDate] = useState<Date | null>(formData.validity_date ? new Date(formData.validity_date) : null);
   const [discountType, setDiscountType] = useState<'discount' | 'campaign'>('discount');
@@ -165,13 +165,30 @@ const Profile: React.FC<ProfileProps> = ({
 
   useEffect(() => {
     // Filter coupons to only show those created by the current user
-    if (user && userCoupons) {
-      const filteredCoupons = userCoupons.filter(coupon => coupon.user_id === user.id);
-      setUserSpecificCoupons(filteredCoupons);
-    } else {
-      setUserSpecificCoupons([]);
-    }
-  }, [user, userCoupons]);
+    const fetchUserCoupons = async () => {
+      if (user && user.id) {
+        try {
+          const { data: coupons, error } = await supabase
+            .from('coupons')
+            .select('*')
+            .eq('user_id', user.id);
+
+          if (error) {
+            throw error;
+          }
+
+          setUserSpecificCoupons(coupons || []);
+        } catch (error: any) {
+          toast.error(`Failed to fetch user coupons: ${error.message}`);
+          setUserSpecificCoupons([]);
+        }
+      } else {
+        setUserSpecificCoupons([]);
+      }
+    };
+
+    fetchUserCoupons();
+  }, [user]);
 
   const handleDiscountTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setDiscountType(e.target.value as 'discount' | 'campaign');
@@ -284,7 +301,7 @@ const Profile: React.FC<ProfileProps> = ({
               );
             })
           ) : (
-            <p>No brands added yet.</p>
+            <p>Marka henüz eklenmedi.</p>
           )}
         </div>
       </div>
@@ -303,7 +320,7 @@ const Profile: React.FC<ProfileProps> = ({
 
         <div className="user-stats-card">
           <h3 className="user-stats-title">Coupon Statistics</h3>
-          <p><strong>Total Coupons:</strong> {userCoupons?.length}</p>
+          <p><strong>Total Coupons:</strong> {userSpecificCoupons?.length}</p>
         </div>
       </div>
 
@@ -379,9 +396,16 @@ const Profile: React.FC<ProfileProps> = ({
 
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold text-white">Your Coupons</h2>
-        <button className="add-coupon-button" onClick={() => setShowAddCoupon(!showAddCoupon)}>
-          {showAddCoupon ? 'Cancel Add Coupon' : 'Add Coupon'}
-        </button>
+        <div className="flex items-center">
+          <button className="add-coupon-button" onClick={() => setShowAddCoupon(!showAddCoupon)}>
+            {showAddCoupon ? 'Add Coupon' : 'Add Coupon'}
+          </button>
+          {showAddCoupon && (
+            <button className="form-cancel-button ml-2" style={{ backgroundColor: 'red' }} onClick={() => setShowAddCoupon(false)}>
+              Cancel Add Coupon
+            </button>
+          )}
+        </div>
       </div>
 
       {showAddCoupon && (
@@ -580,19 +604,22 @@ const Profile: React.FC<ProfileProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {userSpecificCoupons && Array.isArray(userSpecificCoupons) ? (
-          userSpecificCoupons.map((coupon) => (
-            <CouponCard
-              key={coupon.id}
-              coupon={coupon}
-              activeTab="profile"
-              startEditing={startEditing}
-              handleDelete={handleDelete}
-            />
-          ))
+      <div className="coupon-list-container">
+        {userSpecificCoupons && Array.isArray(userSpecificCoupons) && userSpecificCoupons.length > 0 ? (
+          <ul className="coupon-list">
+            {userSpecificCoupons.map((coupon) => (
+              <li key={coupon.id} className="coupon-list-item">
+                <CouponCard
+                  coupon={coupon}
+                  activeTab="profile"
+                  startEditing={startEditing}
+                  handleDelete={handleDelete}
+                />
+              </li>
+            ))}
+          </ul>
         ) : (
-          <p>No coupons available.</p>
+          <p>Kupon bulunmamaktadır.</p>
         )}
       </div>
     </div>

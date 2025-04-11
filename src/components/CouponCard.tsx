@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy } from 'lucide-react';
+import { Copy, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 interface Coupon {
@@ -164,20 +164,20 @@ const CouponCard: React.FC<CouponCardProps> = ({ coupon, activeTab, startEditing
         )}
         <div className="flip-clock-container">
           <div className="flip-clock-row">
-            <div className="flip-clock-item dark-bg">
-              <span className="flip-clock-label">Days</span>
+            <div className="flip-clock-item">
+              <span className="flip-clock-label">Gün</span>
               <span className="flip-clock-value">{timeLeft.days}</span>
             </div>
-            <div className="flip-clock-item dark-bg">
-              <span className="flip-clock-label">Hours</span>
+            <div className="flip-clock-item">
+              <span className="flip-clock-label">Saat</span>
               <span className="flip-clock-value">{timeLeft.hours}</span>
             </div>
-            <div className="flip-clock-item dark-bg">
-              <span className="flip-clock-label">Minutes</span>
+            <div className="flip-clock-item">
+              <span className="flip-clock-label">Dakika</span>
               <span className="flip-clock-value">{timeLeft.minutes}</span>
             </div>
-            <div className="flip-clock-item dark-bg">
-              <span className="flip-clock-label">Seconds</span>
+            <div className="flip-clock-item">
+              <span className="flip-clock-label">Saniye</span>
               <span className="flip-clock-value">{timeLeft.seconds}</span>
             </div>
           </div>
@@ -187,14 +187,16 @@ const CouponCard: React.FC<CouponCardProps> = ({ coupon, activeTab, startEditing
             <div className="flex justify-center space-x-2">
               <button
                 onClick={() => startEditing(coupon)}
-                className="text-blue-600 hover:text-blue-900 coupon-button"
+                className="edit-button coupon-button"
               >
+                <Edit className="w-4 h-4 mr-1" />
                 Edit
               </button>
               <button
                 onClick={() => handleDelete(coupon.id)}
-                className="text-red-600 hover:text-red-900 coupon-button"
+                className="delete-button coupon-button"
               >
+                <Trash2 className="w-4 h-4 mr-1" />
                 Delete
               </button>
             </div>

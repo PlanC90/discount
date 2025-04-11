@@ -916,7 +916,7 @@ function App() {
             countriesList={countries}
             editingId={editingId}
             handleSubmit={handleSubmit}
-            handleEdit={handleEdit}
+            handleEdite={handleEdit}
             handleInputChange={handleInputChange}
             handleSave={handleCancel}
             setImagePreview={setImagePreview}            imagePreview={imagePreview}
