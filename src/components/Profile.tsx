@@ -5,6 +5,8 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import CouponCard from './CouponCard';
 import { supabase } from '../lib/supabase';
+import AddCouponForm from './Profile/AddCouponForm';
+import UserInfo from './Profile/UserInfo';
 
 interface Coupon {
   id: string;
@@ -94,18 +96,9 @@ const Profile: React.FC<ProfileProps> = ({
   handleProfileUpdate,
   handleCancel
 }) => {
-  const [startDate, setStartDate] = useState<Date | null>(formData.validity_date ? new Date(formData.validity_date) : null);
-  const [discountType, setDiscountType] = useState<'discount' | 'campaign'>('discount');
-  const [campaignEarnings, setCampaignEarnings] = useState<number | ''>('');
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [userBrands, setUserBrands] = useState<string[]>([]);
   const [userSpecificCoupons, setUserSpecificCoupons] = useState<Coupon[]>([]);
-
-  useEffect(() => {
-    if (startDate) {
-      handleInputChange({ target: { value: startDate.toISOString().split('T')[0], name: 'validity_date' } } as any, 'validity_date');
-    }
-  }, [startDate]);
 
   useEffect(() => {
     const fetchAvailableBrands = async () => {
@@ -164,7 +157,6 @@ const Profile: React.FC<ProfileProps> = ({
   }, [userCoupons, user.id]);
 
   useEffect(() => {
-    // Filter coupons to only show those created by the current user
     const fetchUserCoupons = async () => {
       if (user && user.id) {
         try {
@@ -190,139 +182,14 @@ const Profile: React.FC<ProfileProps> = ({
     fetchUserCoupons();
   }, [user]);
 
-  const handleDiscountTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDiscountType(e.target.value as 'discount' | 'campaign');
-  };
-
-  const handleCampaignEarningsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCampaignEarnings(e.target.value === '' ? '' : Number(e.target.value));
-    handleInputChange({ target: { value: e.target.value, name: 'discount' } } as any, 'discount');
-  };
-
-  const handleSaveCoupon = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      const { data, error } = await supabase
-        .from('coupons')
-        .update({
-          title: formData.title,
-          code: formData.code,
-          discount: formData.discount,
-          validity_date: formData.validity_date,
-          memex_payment: formData.memex_payment,
-          description: formData.description,
-          image_url: formData.image_url,
-          website_link: formData.website_link,
-          category: formData.category,
-          country: formData.country,
-          brand: formData.brand,
-        })
-        .eq('id', editingId)
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success('Coupon updated successfully!');
-      handleCancel();
-    } catch (error: any) {
-      toast.error(`Failed to update coupon: ${error.message}`);
-    }
-  };
-
-  const handleAddCoupon = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Extract only the necessary data from formData
-    const couponData = {
-      title: formData.title,
-      code: formData.code,
-      discount: formData.discount,
-      validity_date: formData.validity_date,
-      memex_payment: formData.memex_payment,
-      description: formData.description,
-      image_url: formData.image_url,
-      website_link: formData.website_link,
-      category: formData.category,
-      country: formData.country,
-      user_id: user.id,
-      brand: formData.brand,
-    };
-
-    try {
-      const { data, error } = await supabase
-        .from('coupons')
-        .insert([couponData]);
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success('Coupon added successfully!');
-      setShowAddCoupon(false);
-    } catch (error: any) {
-      toast.error(`Failed to add coupon: ${error.message}`);
-    }
-  };
-
-  const createBrandPage = (brand: string) => {
-    const pageContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Edit Brand: ${brand}</title>
-      </head>
-      <body>
-        <h1>Edit Brand: ${brand}</h1>
-        <p>Here you can edit the details for the brand: ${brand}</p>
-        <p>This is a placeholder page. Functionality to edit brand details will be added later.</p>
-      </body>
-      </html>
-    `;
-    const blob = new Blob([pageContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    return url;
+  const handleCancelForm = () => {
+    setShowAddCoupon(false);
+    handleCancel();
   };
 
   return (
     <div className="profile-container">
-      {/* Added Brands Section */}
-      <div className="user-brands-section">
-        <h3 className="user-brands-title">Your Brands</h3>
-        <div className="user-brands-list">
-          {Array.isArray(userBrands) && userBrands.length > 0 ? (
-            userBrands.map((brand, index) => {
-              const brandPageUrl = createBrandPage(brand);
-              return (
-                <a key={index} href={brandPageUrl} target="_blank" rel="noopener noreferrer" className="user-brand-item">
-                  {brand}
-                </a>
-              );
-            })
-          ) : (
-            <p>Marka henüz eklenmedi.</p>
-          )}
-        </div>
-      </div>
-
-      <div className="user-info-summary">
-        <div className="user-info-card">
-          <h3 className="user-info-title">Personal Information</h3>
-          <p><strong>First Name:</strong> {user?.first_name}</p>
-          <p><strong>Last Name:</strong> {user?.last_name}</p>
-          <p><strong>Telegram Username:</strong> {user?.telegram_username}</p>
-          <p><strong>Country:</strong> {user?.country}</p>
-          <button className="user-edit-button" onClick={() => setShowEditProfile(true)}>
-            Edit Profile
-          </button>
-        </div>
-
-        <div className="user-stats-card">
-          <h3 className="user-stats-title">Coupon Statistics</h3>
-          <p><strong>Total Coupons:</strong> {userSpecificCoupons?.length}</p>
-        </div>
-      </div>
+      <UserInfo user={user} handleEditProfile={handleProfileEdit} />
 
       {showEditProfile && (
         <div className="form-container">
@@ -379,12 +246,12 @@ const Profile: React.FC<ProfileProps> = ({
               </select>
             </div>
             <div className="col-span-2 flex justify-end">
-              <button type="submit" className="form-submit-button">
+              <button type="submit" className="px-6 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-300">
                 Update Profile
               </button>
               <button
                 type="button"
-                className="form-cancel-button ml-2"
+                className="px-6 py-3 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-300 ml-2"
                 onClick={() => setShowEditProfile(false)}
               >
                 Cancel
@@ -396,212 +263,26 @@ const Profile: React.FC<ProfileProps> = ({
 
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold text-white">Your Coupons</h2>
-        <div className="flex items-center">
-          <button className="add-coupon-button" onClick={() => setShowAddCoupon(!showAddCoupon)}>
-            {showAddCoupon ? 'Add Coupon' : 'Add Coupon'}
-          </button>
-          {showAddCoupon && (
-            <button className="form-cancel-button ml-2" style={{ backgroundColor: 'red' }} onClick={() => setShowAddCoupon(false)}>
-              Cancel Add Coupon
-            </button>
-          )}
-        </div>
+        <button 
+          onClick={() => setShowAddCoupon(!showAddCoupon)}
+          className="px-6 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-300"
+        >
+          {showAddCoupon ? 'Cancel' : 'Add Coupon'}
+        </button>
       </div>
 
       {showAddCoupon && (
-        <div className="form-container">
-          <h2 className="form-title">{editingId ? 'Edit Coupon' : 'Add Coupon'}</h2>
-          <form onSubmit={editingId ? (e) => handleSaveCoupon(e) : handleAddCoupon} className="form-grid">
-            <div className="col-span-2">
-              <label htmlFor="title" className="form-label">Title:</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange(e, 'title')}
-                className="form-input"
-                required
-              />
-            </div>
-            <div className="col-span-2">
-              <label htmlFor="code" className="form-label">Code:</label>
-              <input
-                type="text"
-                id="code"
-                name="code"
-                value={formData.code}
-                onChange={(e) => handleInputChange(e, 'code')}
-                className="form-input"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="discountType" className="form-label">Discount Type:</label>
-              <select
-                id="discountType"
-                name="discountType"
-                value={discountType}
-                onChange={handleDiscountTypeChange}
-                className="form-input"
-              >
-                <option value="discount">Discount</option>
-                <option value="campaign">Campaign</option>
-              </select>
-            </div>
-            {discountType === 'discount' ? (
-              <div>
-                <label htmlFor="discount" className="form-label">Discount:</label>
-                <input
-                  type="number"
-                  id="discount"
-                  name="discount"
-                  value={formData.discount}
-                  onChange={(e) => handleInputChange(e, 'discount')}
-                  className="form-input"
-                  required
-                />
-              </div>
-            ) : (
-              <div>
-                <label htmlFor="campaignEarnings" className="form-label">Campaign Earnings:</label>
-                <input
-                  type="number"
-                  id="campaignEarnings"
-                  name="campaignEarnings"
-                  value={campaignEarnings}
-                  onChange={handleCampaignEarningsChange}
-                  className="form-input"
-                  required
-                />
-              </div>
-            )}
-            <div>
-              <div className="flex flex-col">
-                <label htmlFor="validity_date" className="form-label">Validity Date:</label>
-                <DatePicker
-                  selected={startDate}
-                  onChange={(date: Date | null) => setStartDate(date)}
-                  dateFormat="dd.MM.yyyy"
-                  className="form-input"
-                  placeholderText="gg.aa.yyyy"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="memex_payment" className="form-label">
-                If your business or site accepts payments with MemeX, check this box:
-              </label>
-              <select
-                id="memex_payment"
-                name="memex_payment"
-                value={formData.memex_payment ? 'true' : 'false'}
-                onChange={(e) => handleInputChange(e, 'memex_payment')}
-                className="form-input"
-              >
-                <option value="false">No</option>
-                <option value="true">Yes</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="description" className="form-label">Description:</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange(e, 'description')}
-                className="form-input form-textarea"
-              />
-            </div>
-            <div>
-              <label htmlFor="image_url" className="form-label">Add Image URL:</label>
-              <input
-                type="text"
-                id="image_url"
-                name="image_url"
-                value={formData.image_url}
-                onChange={(e) => {
-                  handleInputChange(e, 'image_url');
-                }}
-                className="form-input"
-              />
-              {imagePreview && <img src={imagePreview} alt="Preview" className="form-image-preview" />}
-            </div>
-            <div>
-              <label htmlFor="website_link" className="form-label">Website Link:</label>
-              <input
-                type="text"
-                id="website_link"
-                name="website_link"
-                value={formData.website_link}
-                onChange={(e) => handleInputChange(e, 'website_link')}
-                className="form-input"
-              />
-            </div>
-            <div>
-              <label htmlFor="category" className="form-label">Select Category</label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={(e) => handleInputChange(e, 'category')}
-                className="form-input"
-              >
-                <option value="">Select a category</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="country" className="form-label">Select Country</label>
-              <select
-                id="country"
-                name="country"
-                value={formData.country}
-                onChange={(e) => handleInputChange(e, 'country')}
-                className="form-input"
-              >
-                <option value="">Select a country</option>
-                <option value="all">Select All Countries</option>
-                {countriesList.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="brand" className="form-label">Brand:</label>
-              <input
-                type="text"
-                id="brand"
-                name="brand"
-                value={formData.brand}
-                onChange={(e) => handleInputChange(e, 'brand')}
-                className="form-input"
-                list="brandOptions"
-              />
-              <datalist id="brandOptions">
-                {availableBrands.map((brand, index) => (
-                  <option key={index} value={brand} />
-                ))}
-              </datalist>
-            </div>
-            <div className="col-span-2 flex justify-end">
-              <button type="submit" className="form-submit-button">
-                {editingId ? 'Save Coupon' : 'Add Coupon'}
-              </button>
-              {editingId ? (
-                <button type="button" className="form-cancel-button ml-2" onClick={handleCancel}>
-                  Cancel
-                </button>
-              ) : null}
-            </div>
-          </form>
-        </div>
+        <AddCouponForm
+          formData={formData}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+          handleCancel={handleCancelForm}
+          categories={categories}
+          countries={countriesList}
+          imagePreview={imagePreview}
+          editingId={editingId}
+          availableBrands={availableBrands}
+        />
       )}
 
       <div className="coupon-list-container">
@@ -619,7 +300,7 @@ const Profile: React.FC<ProfileProps> = ({
             ))}
           </ul>
         ) : (
-          <p>Kupon bulunmamaktadır.</p>
+          <p className="text-center text-gray-500">No coupons found.</p>
         )}
       </div>
     </div>

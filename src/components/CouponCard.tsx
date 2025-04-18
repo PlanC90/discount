@@ -18,11 +18,12 @@ interface Coupon {
   user_id?: string;
   brand?: string;
   website_link?: string;
+  discount_type?: 'discount' | 'campaign';
 }
 
 interface CouponCardProps {
   coupon: Coupon;
-  activeTab: string;
+  activeTab?: string;
   startEditing?: (coupon: Coupon) => void;
   handleDelete?: (id: string) => void;
 }
@@ -84,19 +85,45 @@ const CouponCard: React.FC<CouponCardProps> = ({ coupon, activeTab, startEditing
     document.body.removeChild(textArea);
   }
 
+  const formatNumber = (number: number | null) => {
+    if (number === null) return '';
+    return number.toLocaleString('tr-TR');
+  };
+
   if (timeLeft.expired) return null;
 
   return (
-    <div className="relative bg-zinc-900 text-white shadow-lg rounded-lg p-4 flex gap-4 transition-transform hover:scale-105 duration-300">
-      <img
-        src={coupon.image_url || 'https://cdn.glitch.global/c0240ef5-b1d3-409c-a790-588d18d5cf32/discount.png'}
-        alt="Coupon"
-        className="w-44 h-44 object-contain"
-      />
+    <div className="relative bg-zinc-900 text-white shadow-lg rounded-lg p-4 flex flex-row gap-4">
+      {/* Image on the left */}
+      <div className="w-44 h-44 flex-shrink-0 relative">
+        <img
+          src={coupon.image_url || 'https://cdn.glitch.global/c0240ef5-b1d3-409c-a790-588d18d5cf32/discount.png'}
+          alt="Coupon"
+          className="w-full h-full object-contain rounded-lg"
+        />
+        {/* Website link */}
+        {coupon.website_link && (
+          <a
+            href={coupon.website_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-2 left-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 py-2 rounded-lg shadow hover:shadow-md text-xs font-semibold transition-all duration-200 flex items-center justify-center"
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              textAlign: 'center',
+              right: '2px' // Add this line
+            }}
+          >
+            🌐 Go to Website
+          </a>
+        )}
+      </div>
 
-      <div className="flex flex-col justify-between w-full">
+      <div className="flex flex-col justify-between flex-grow">
         <div>
-          <h3 className="text-xl font-bold">{coupon.title}</h3>
+          <h3 className="text-xl font-bold mb-2">{coupon.title}</h3>
           <p className="text-gray-300 text-sm mb-2">{coupon.description}</p>
 
           <div className="mb-2">
@@ -126,13 +153,13 @@ const CouponCard: React.FC<CouponCardProps> = ({ coupon, activeTab, startEditing
           <div className="mt-4 flex gap-2">
             <button
               onClick={() => startEditing(coupon)}
-              className="flex items-center gap-1 px-3 py-1 text-sm text-blue-700 border border-blue-300 rounded hover:bg-blue-100"
+              className="px-6 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-300"
             >
               Edit
             </button>
             <button
               onClick={() => handleDelete(coupon.id)}
-              className="flex items-center gap-1 px-3 py-1 text-sm text-red-700 border border-red-300 rounded hover:bg-red-100"
+              className="px-6 py-3 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-300"
             >
               Delete
             </button>
@@ -140,49 +167,45 @@ const CouponCard: React.FC<CouponCardProps> = ({ coupon, activeTab, startEditing
         )}
       </div>
 
-      {/* Discount / Campaign Earnings moved to top-right corner */}
-      <div className="absolute top-2 right-2 flex flex-col items-end">
-        <span className="text-gray-400 text-sm">
-          {coupon.discount_en ? 'Campaign Earnings:' : 'Discount:'}
-        </span>
-        <span
-          className="text-lg font-bold"
-          style={{ color: coupon.discount_en ? 'green' : 'orange' }}
-        >
-          {coupon.discount_en
-            ? `$${coupon.discount_en}`
-            : coupon.discount !== null
-              ? `${coupon.discount}%`
-              : 'N/A'}
-        </span>
+      {/* Discount badge */}
+      <div className="absolute top-2 right-2" style={{ width: '11rem', textAlign: 'right' }}>
+        {coupon.discount_type === 'campaign' ? (
+          <div style={{
+            width: '11rem',
+            textAlign: 'center',
+            color: 'orange',
+            fontSize: '2rem',
+            fontWeight: 'bold',
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}>
+            {formatNumber(coupon.discount)}
+          </div>
+        ) : (
+          coupon.discount !== null && coupon.discount !== undefined ? (
+            <span className="text-2xl font-bold" style={{ color: 'orange' }}>
+              {`${coupon.discount}%`}
+            </span>
+          ) : null
+        )}
       </div>
 
-      {/* Countdown Timer moved 2 rows down */}
-      <div className="absolute top-36 right-2 flex gap-2 bg-transparent">
+      {/* Timer */}
+      <div className="absolute bottom-2 right-2 flex gap-2">
         {[
           { label: 'DAYS', value: timeLeft.days },
           { label: 'HOURS', value: timeLeft.hours },
           { label: 'MINUTES', value: timeLeft.minutes },
           { label: 'SECONDS', value: timeLeft.seconds },
         ].map((item, index) => (
-          <div key={index} className="bg-zinc-800 text-white text-center px-3 py-2 rounded-md shadow-sm">
-            <div className="text-[10px] text-gray-400">{item.label}</div>
-            <div className="text-lg font-bold">{item.value}</div>
+          <div key={index} className="bg-zinc-800 text-white text-center px-2 py-1 rounded-md shadow-sm">
+            <div className="text-[8px] text-gray-400">{item.label}</div>
+            <div className="text-sm font-bold">{item.value}</div>
           </div>
         ))}
       </div>
-
-      {/* Website Button */}
-      {coupon.website_link && (
-        <a
-          href={coupon.website_link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute bottom-20 right-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 py-2 rounded-lg shadow hover:shadow-md text-xs font-semibold transition-all duration-200"
-        >
-          🌐 Go to Website
-        </a>
-      )}
     </div>
   );
 };

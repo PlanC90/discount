@@ -14,6 +14,11 @@ import {
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import { supabase } from '../lib/supabase';
+import AdminSummary from './AdminPanel/AdminSummary';
+import CouponFilters from './AdminPanel/CouponFilters';
+import CouponTable from './AdminPanel/CouponTable';
+import MemberFilters from './AdminPanel/MemberFilters';
+import MemberTable from './AdminPanel/MemberTable';
 
 ChartJS.register(
   CategoryScale,
@@ -75,7 +80,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Brand Autocomplete State
   const [brandFilter, setBrandFilter] = useState('');
-  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [availableBrands, setAvailableBrands] = useState<string[]>([ ]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -383,6 +388,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     setBrandFilter(e.target.value);
   };
 
+  const handleUserFirstNameFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserFirstNameFilter(e.target.value);
+  };
+
+  const handleUserLastNameFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserLastNameFilter(e.target.value);
+  };
+
+  const handleUserTelegramUsernameFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserTelegramUsernameFilter(e.target.value);
+  };
+
+  const handleUserCountryFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserCountryFilter(e.target.value);
+  };
+
   return (
     <div className="admin-panel">
       <h2 className="admin-panel-title">Admin Dashboard</h2>
@@ -410,20 +431,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {activeMenu === 'dashboard' && (
         <>
-          <div className="admin-summary-grid">
-            <div className="admin-summary-card">
-              <h3 className="admin-summary-title">Total Coupons</h3>
-              <p className="admin-summary-value">{coupons.length}</p>
-            </div>
-            <div className="admin-summary-card">
-              <h3 className="admin-summary-title">Total Members</h3>
-              <p className="admin-summary-value">{memberCount}</p>
-            </div>
-            <div className="admin-summary-card">
-              <h3 className="admin-summary-title">Approved Coupons</h3>
-              <p className="admin-summary-value">{coupons.filter(coupon => coupon.approved).length}</p>
-            </div>
-          </div>
+          <AdminSummary coupons={coupons} memberCount={memberCount} />
 
           <div className="admin-chart-container">
             <Bar data={chartData} options={chartOptions} />
@@ -451,108 +459,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {activeMenu === 'coupons' && (
         <div className="overflow-x-auto">
-          <h3>Coupons Content</h3>
+          <h3>Your Coupons</h3>
+          <button className="add-coupon-button green-button">Add Coupon</button>
           <table className="admin-table">
             <thead className="admin-table-header">
               <tr>
-                <th className="admin-table-header-cell">
-                  Title
-                  <input
-                    type="text"
-                    placeholder="Filter Title"
-                    value={couponTitleFilter}
-                    onChange={handleCouponTitleFilterChange}
-                    className="admin-input"
-                  />
-                </th>
-                <th className="admin-table-header-cell">
-                  Code
-                  <input
-                    type="text"
-                    placeholder="Filter Code"
-                    value={couponCodeFilter}
-                    onChange={(e) => setCouponCodeFilter(e.target.value)}
-                    className="admin-input"
-                  />
-                </th>
-                <th className="admin-table-header-cell">
-                  Discount
-                  <input
-                    type="text"
-                    placeholder="Filter Discount"
-                    value={couponDiscountFilter}
-                    onChange={(e) => setCouponDiscountFilter(e.target.value)}
-                    className="admin-input"
-                  />
-                </th>
-                <th className="admin-table-header-cell">
-                  Description
-                  <input
-                    type="text"
-                    placeholder="Filter Description"
-                    value={couponDescriptionFilter}
-                    onChange={handleCouponDescriptionFilterChange}
-                    className="admin-input"
-                  />
-                </th>
-                 <th className="admin-table-header-cell">
-                  Brand
-                  <input
-                    type="text"
-                    placeholder="Filter Brand"
-                    value={brandFilter}
-                    onChange={handleBrandFilterChange}
-                    className="admin-input"
-                    list="brandOptions"
-                  />
-                  <datalist id="brandOptions">
-                    {availableBrands.map((brand, index) => (
-                      <option key={index} value={brand} />
-                    ))}
-                  </datalist>
-                </th>
+                <CouponFilters
+                  couponTitleFilter={couponTitleFilter}
+                  couponCodeFilter={couponCodeFilter}
+                  couponDiscountFilter={couponDiscountFilter}
+                  couponDescriptionFilter={couponDescriptionFilter}
+                  brandFilter={brandFilter}
+                  availableBrands={availableBrands}
+                  handleCouponTitleFilterChange={handleCouponTitleFilterChange}
+                  handleCouponCodeFilterChange={handleCouponCodeFilterChange}
+                  handleCouponDiscountFilterChange={handleCouponDiscountFilterChange}
+                  handleCouponDescriptionFilterChange={handleCouponDescriptionFilterChange}
+                  handleBrandFilterChange={handleBrandFilterChange}
+                />
                 <th className="admin-table-header-cell text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="admin-table-body">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-4">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500 inline-block" />
-                  </td>
-                </tr>
-              ) : (
-                filteredCoupons.map((coupon) => (
-                  <tr key={coupon.id} className="admin-table-row">
-                    <td className="admin-table-cell">{coupon.title}</td>
-                    <td className="admin-table-cell">{coupon.code}</td>
-                    <td className="admin-table-cell">{coupon.discount}</td>
-                    <td className="admin-table-cell">{coupon.description}</td>
-                     <td className="admin-table-cell">{coupon.brand}</td>
-                    <td className="admin-table-cell admin-table-actions">
-                      <button
-                        onClick={() => toggleApprove(coupon.id, coupon.approved)}
-                        className="text-green-600 hover:text-green-900 mr-3"
-                      >
-                        {coupon.approved ? 'Unapprove' : 'Approve'}
-                      </button>
-                      <button
-                        onClick={() => startEditing(coupon)}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(coupon.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
+            <CouponTable
+              coupons={coupons}
+              loading={loading}
+              toggleApprove={toggleApprove}
+              startEditing={startEditing}
+              handleDelete={handleDelete}
+              filteredCoupons={filteredCoupons}
+            />
           </table>
         </div>
       )}
@@ -563,146 +498,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <table className="admin-table">
             <thead className="admin-table-header">
               <tr>
-                <th className="admin-table-header-cell">
-                  First Name
-                  <input
-                    type="text"
-                    placeholder="Filter First Name"
-                    value={userFirstNameFilter}
-                    onChange={(e) => setUserFirstNameFilter(e.target.value)}
-                    className="admin-input"
-                  />
-                </th>
-                <th className="admin-table-header-cell">
-                  Last Name
-                  <input
-                    type="text"
-                    placeholder="Filter Last Name"
-                    value={userLastNameFilter}
-                    onChange={(e) => setUserLastNameFilter(e.target.value)}
-                    className="admin-input"
-                  />
-                </th>
-                <th className="admin-table-header-cell">
-                  Telegram Username
-                  <input
-                    type="text"
-                    placeholder="Filter Telegram Username"
-                    value={userTelegramUsernameFilter}
-                    onChange={(e) => setUserTelegramUsernameFilter(e.target.value)}
-                    className="admin-input"
-                  />
-                </th>
-                <th className="admin-table-header-cell">
-                  Country
-                  <input
-                    type="text"
-                    placeholder="Filter Country"
-                    value={userCountryFilter}
-                    onChange={(e) => setUserCountryFilter(e.target.value)}
-                    className="admin-input"
-                  />
-                </th>
+                <MemberFilters
+                  userFirstNameFilter={userFirstNameFilter}
+                  userLastNameFilter={userLastNameFilter}
+                  userTelegramUsernameFilter={userTelegramUsernameFilter}
+                  userCountryFilter={userCountryFilter}
+                  setUserFirstNameFilter={handleUserFirstNameFilterChange}
+                  setUserLastNameFilter={handleUserLastNameFilterChange}
+                  setUserTelegramUsernameFilter={handleUserTelegramUsernameFilter}
+                  setUserCountryFilter={handleUserCountryFilterChange}
+                />
                 <th className="admin-table-header-cell text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="admin-table-body">
-              {usersLoading ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-4">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500 inline-block" />
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers.map((user) => (
-                  <tr key={user.id} className="admin-table-row">
-                    {editingUserId === user.id ? (
-                      <>
-                        <td className="admin-table-cell">
-                          <input
-                            type="text"
-                            name="first_name"
-                            value={userFormData.first_name}
-                            onChange={(e) => handleUserInputChange(e, 'first_name')}
-                            className="admin-input"
-                          />
-                        </td>
-                        <td className="admin-table-cell">
-                          <input
-                            type="text"
-                            name="last_name"
-                            value={userFormData.last_name}
-                            onChange={(e) => handleUserInputChange(e, 'last_name')}
-                            className="admin-input"
-                          />
-                        </td>
-                        <td className="admin-table-cell">
-                          <input
-                            type="text"
-                            name="telegram_username"
-                            value={userFormData.telegram_username}
-                            onChange={(e) => handleUserInputChange(e, 'telegram_username')}
-                            className="admin-input"
-                          />
-                        </td>
-                        <td className="admin-table-cell">
-                          <input
-                            type="text"
-                            name="country"
-                            value={userFormData.country}
-                            onChange={(e) => handleUserInputChange(e, 'country')}
-                            className="admin-input"
-                          />
-                        </td>
-                        <td className="admin-table-cell admin-table-actions">
-                          <button
-                            onClick={(e) => handleUpdateUser(e, user.id)}
-                            className="text-green-600 hover:text-green-900 mr-3"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={handleCancelUserEdit}
-                            className="text-gray-600 hover:text-gray-900"
-                          >
-                            Cancel
-                          </button>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="admin-table-cell">{user.first_name}</td>
-                        <td className="admin-table-cell">{user.last_name}</td>
-                        <td className="admin-table-cell">
-                          <a
-                            href={`https://t.me/${user.telegram_username}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {user.telegram_username}
-                          </a>
-                        </td>
-                        <td className="admin-table-cell">{user.country}</td>
-                        <td className="admin-table-cell admin-table-actions">
-                          <button
-                            onClick={() => handleStartUserEditing(user)}
-                            className="text-blue-600 hover:text-blue-900 mr-3"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
+            <MemberTable
+              users={users}
+              usersLoading={usersLoading}
+              editingUserId={editingUserId}
+              userFormData={userFormData}
+              handleUserInputChange={handleUserInputChange}
+              handleUpdateUser={handleUpdateUser}
+              handleCancelUserEdit={handleCancelUserEdit}
+              handleStartUserEditing={handleStartUserEditing}
+              handleDeleteUser={handleDeleteUser}
+              filteredUsers={filteredUsers}
+            />
           </table>
         </div>
       )}

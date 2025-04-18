@@ -1,180 +1,178 @@
-import React from 'react';
-import CouponCard from './CouponCard';
-import { Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { Auth } from '../components/Auth';
+import { Account } from '../components/Account';
+import HomeFilters from './Home/HomeFilters';
+import CouponGrid from './Home/CouponGrid';
+import { useSearchParams } from 'react-router-dom';
 
-interface HomeProps {
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  bannerLoaded: boolean;
-  handleBannerLoad: () => void;
-  selectedCategory: string;
-  setSelectedCategory: (category: string) => void;
-  selectedCountry: string;
-  setSelectedCountry: (country: string) => void;
-  selectedBrand: string;
-  setSelectedBrand: (brand: string) => void;
-  detectedCountry: string;
-  featuredCoupons: any[];
-  loading: boolean;
-  currentCoupons: any[];
-  getCouponColumns: () => string;
-  paginate: (pageNumber: number) => void;
-  pageNumbers: number[];
-  categories: string[];
-  countries: string[];
-  brands: string[];
-  currentPage: number;
-}
+function Home() {
+  const [session, setSession] = useState(null);
+  const [coupons, setCoupons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [couponsPerPage, setCouponsPerPage] = useState(12);
+  const [totalCount, setTotalCount] = useState(0);
+  const [categories, setCategories] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-const Home: React.FC<HomeProps> = ({
-  searchTerm,
-  setSearchTerm,
-  bannerLoaded,
-  handleBannerLoad,
-  selectedCategory,
-  setSelectedCategory,
-  selectedCountry,
-  setSelectedCountry,
-  selectedBrand,
-  setSelectedBrand,
-  detectedCountry,
-  featuredCoupons,
-  loading,
-  currentCoupons,
-  getCouponColumns,
-  paginate,
-  pageNumbers,
-  categories,
-  countries,
-  brands,
-  currentPage,
-}) => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-        staggerChildren: 0.1,
-      },
-    },
-    exit: {
-      opacity: 0,
-      transition: {
-        duration: 0.3,
-      },
-    },
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+  }, []);
+
+  useEffect(() => {
+    fetchCoupons();
+    fetchCategories();
+    fetchCountries();
+    fetchBrands();
+  }, [searchTerm, selectedCategory, selectedCountry, selectedBrand, currentPage, couponsPerPage]);
+
+  const fetchCoupons = async () => {
+    setLoading(true);
+    let query = supabase
+      .from('coupons')
+      .select('*', { count: 'exact' })
+      .eq('approved', true);
+
+    if (searchTerm) {
+      query = query.ilike('title', `%${searchTerm}%`);
+    }
+
+    if (selectedCategory) {
+      query = query.eq('category', selectedCategory);
+    }
+
+    if (selectedCountry && selectedCountry !== 'all') {
+      query = query.eq('country', selectedCountry);
+    }
+
+    if (selectedBrand) {
+      query = query.eq('brand', selectedBrand);
+    }
+
+    const from = (currentPage - 1) * couponsPerPage;
+    const to = from + couponsPerPage - 1;
+
+    const { data, count, error } = await query.range(from, to);
+
+    if (error) {
+      console.error('Error fetching coupons:', error);
+    } else {
+      setCoupons(data || []);
+      setTotalCount(count || 0);
+    }
+
+    setLoading(false);
   };
 
-  const couponVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.4,
-      },
-    },
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('coupon_categories')
+      .select('name');
+    if (error) {
+      console.error('Error fetching categories:', error);
+    } else {
+      setCategories(data.map(cat => cat.name));
+    }
   };
+
+  const fetchCountries = async () => {
+    const { data, error } = await supabase
+      .from('coupon_countries')
+      .select('code');
+    if (error) {
+      console.error('Error fetching countries:', error);
+    } else {
+      setCountries(data.map(country => country.code));
+    }
+  };
+
+  const fetchBrands = async () => {
+    const { data, error } = await supabase
+      .from('coupon_brands')
+      .select('name');
+    if (error) {
+      console.error('Error fetching brands:', error);
+    } else {
+      setBrands(data.map(brand => brand.name));
+    }
+  };
+
+  const handleCouponsPerPageChange = (newCouponsPerPage: number) => {
+    setCurrentPage(1); // Reset to first page
+    setCouponsPerPage(newCouponsPerPage);
+  };
+
+  const pageNumbers = Array.from({ length: Math.ceil(totalCount / couponsPerPage) }, (_, i) => i + 1);
 
   return (
-    <>
-      <input
-        type="text"
-        placeholder="Search coupons..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="search-input mb-4 w-full sm:w-auto"
-      />
-      <img
-        src="https://cdn.glitch.global/c0240ef5-b1d3-409c-a790-588d18d5cf32/memex-banner-3.jpg"
-        alt="Discount Banner"
-        className={`coupon-banner mb-4 ${bannerLoaded ? 'loaded' : 'loading'}`}
-        onLoad={handleBannerLoad}
+    <div className="container px-4 py-6 mx-auto">
+      {!session ? <Auth /> : <Account session={session} />}
+
+      <HomeFilters
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedCountry={selectedCountry}
+        setSelectedCountry={setSelectedCountry}
+        selectedBrand={selectedBrand}
+        setSelectedBrand={setSelectedBrand}
+        categories={categories}
+        countries={countries}
+        brands={brands}
       />
 
-      {/* Category, Country and Brand Selectors */}
-      <div className="flex justify-between mb-4">
+      <div className="flex items-center mb-4">
+        <label htmlFor="couponsPerPage" className="mr-2">Coupons per page:</label>
         <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="form-input w-1/3 mr-2"
+          id="couponsPerPage"
+          value={couponsPerPage}
+          onChange={(e) => handleCouponsPerPageChange(Number(e.target.value))}
+          className="form-select border rounded px-2 py-1"
         >
-          <option value="">All Categories</option>
-          {categories.map((category) => (
-            <option key={category} value={category}>{category}</option>
-          ))}
-        </select>
-        <select
-          value={selectedCountry}
-          onChange={(e) => setSelectedCountry(e.target.value)}
-          className="form-input w-1/3 mr-2"
-        >
-          <option value="">All Countries</option>
-          <option value="all">Select All Countries</option>
-          {countries.map((country) => (
-            <option key={country} value={country}>{country}</option>
-          ))}
-        </select>
-        <select
-          value={selectedBrand}
-          onChange={(e) => setSelectedBrand(e.target.value)}
-          className="form-input w-1/3"
-        >
-          <option value="">All Brands</option>
-          {brands.map((brand) => (
-            <option key={brand} value={brand}>{brand}</option>
-          ))}
+          <option value="6">6</option>
+          <option value="12">12</option>
+          <option value="24">24</option>
+          <option value="48">48</option>
         </select>
       </div>
 
-      {/* Detected Country Display */}
-      {detectedCountry && (
-        <div className="mb-4">
-          <p className="text-white">Detected Country: {detectedCountry}</p>
-        </div>
+      {loading ? (
+        <div className="text-center py-10">Loading coupons...</div>
+      ) : (
+        <CouponGrid
+          loading={loading}
+          currentCoupons={coupons}
+          getCouponColumns={() => ''}
+        />
       )}
 
-      <motion.div
-        className={`grid ${getCouponColumns()} gap-6`}
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-      >
-        {loading ? (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          </div>
-        ) : currentCoupons.length === 0 ? (
-          <p className="text-center py-8 text-gray-500">No approved coupons match your search</p>
-        ) : (
-          currentCoupons.map((coupon) => (
-            <motion.div key={coupon.id} variants={couponVariants}>
-              <CouponCard
-                key={coupon.id}
-                coupon={coupon}
-              />
-            </motion.div>
-          ))
-        )}
-      </motion.div>
-
-      {/* Pagination */}
-      <nav className="pagination">
-        <ul className="pagination-list">
-          {pageNumbers.map(number => (
-            <li key={number} className="pagination-item">
-              <button onClick={() => paginate(number)} className={`pagination-link ${number === currentPage ? 'active' : ''}`}>
-                {number}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </>
+      <div className="flex justify-center mt-6 flex-wrap gap-2">
+        {pageNumbers.map((number) => (
+          <button
+            key={number}
+            onClick={() => setCurrentPage(number)}
+            className={`px-4 py-2 rounded border transition duration-200 ${currentPage === number ? 'bg-orange-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-200'}`}
+          >
+            {number}
+          </button>
+        ))}
+      </div>
+    </div>
   );
-};
+}
 
 export default Home;
